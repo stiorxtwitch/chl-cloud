@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediCloud – Gestion de Fichiers</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-900: #0a1628;
+    --blue-800: #0d1f3c;
+    --blue-700: #102a52;
+    --blue-600: #1a3a6b;
+    --blue-500: #1e4d99;
+    --blue-400: #2563eb;
+    --blue-300: #3b82f6;
+    --blue-200: #93c5fd;
+    --blue-100: #dbeafe;
+    --blue-50:  #eff6ff;
+    --white: #ffffff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --accent: #06b6d4;
+    --accent2: #0ea5e9;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 16px rgba(14,39,91,.10), 0 2px 6px rgba(14,39,91,.06);
+    --shadow-lg: 0 10px 40px rgba(14,39,91,.15), 0 4px 12px rgba(14,39,91,.08);
+    --shadow-xl: 0 20px 60px rgba(14,39,91,.2), 0 8px 20px rgba(14,39,91,.1);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:15px;-webkit-font-smoothing:antialiased}
+  body{font-family:'Outfit',sans-serif;background:var(--gray-50);color:var(--gray-800);min-height:100vh;overflow-x:hidden}
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--blue-200);border-radius:99px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--blue-300)}
+
+  /* ===== UTILS ===== */
+  .hidden{display:none!important}
+  .flex{display:flex}
+  .items-center{align-items:center}
+  .gap-2{gap:.5rem}
+  .gap-3{gap:.75rem}
+  .gap-4{gap:1rem}
+  .ml-auto{margin-left:auto}
+  .text-sm{font-size:.85rem}
+  .text-xs{font-size:.75rem}
+  .font-semibold{font-weight:600}
+  .font-bold{font-weight:700}
+  .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* ===== LOGIN PAGE ===== */
+  #login-page{
+    display:flex;
+    min-height:100vh;
+    background:linear-gradient(135deg, var(--blue-900) 0%, var(--blue-700) 40%, var(--blue-500) 100%);
+    position:relative;
+    overflow:hidden;
+  }
+  #login-page::before{
+    content:'';position:absolute;inset:0;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(37,99,235,.35) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(6,182,212,.25) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(14,165,233,.1) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .login-grid-bg{
+    position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;
+  }
+  .login-left{
+    flex:1;display:flex;align-items:center;justify-content:center;
+    padding:3rem;position:relative;z-index:1;
+  }
+  .login-brand{max-width:420px;color:var(--white)}
+  .login-logo{
+    width:90px;height:90px;
+    background:rgba(255,255,255,.08);
+    border:2px solid rgba(255,255,255,.15);
+    border-radius:22px;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:2rem;
+    backdrop-filter:blur(10px);
+    box-shadow:0 8px 32px rgba(0,0,0,.2);
+    overflow:hidden;
+  }
+  .login-logo img{width:60px;height:60px;object-fit:contain}
+  .login-brand h1{
+    font-size:3rem;font-weight:800;
+    background:linear-gradient(135deg,#fff 0%,var(--blue-200) 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    line-height:1.1;margin-bottom:.75rem;
+  }
+  .login-brand p{
+    font-size:1.05rem;color:rgba(255,255,255,.65);
+    line-height:1.6;font-weight:300;
+  }
+  .login-features{margin-top:2.5rem;display:flex;flex-direction:column;gap:.75rem}
+  .login-feature{
+    display:flex;align-items:center;gap:.75rem;
+    color:rgba(255,255,255,.75);font-size:.9rem;
+  }
+  .login-feature-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--blue-300));
+    flex-shrink:0;
+    box-shadow:0 0 8px rgba(6,182,212,.5);
+  }
+  .login-right{
+    width:480px;min-height:100vh;
+    background:var(--white);
+    display:flex;align-items:center;justify-content:center;
+    padding:3rem;
+    box-shadow:-20px 0 60px rgba(0,0,0,.2);
+    position:relative;z-index:1;
+  }
+  .login-form-wrap{width:100%;max-width:360px}
+  .login-form-header{margin-bottom:2rem}
+  .login-form-header h2{
+    font-size:1.8rem;font-weight:700;
+    color:var(--blue-800);margin-bottom:.35rem;
+  }
+  .login-form-header p{color:var(--gray-500);font-size:.9rem}
+  .form-group{margin-bottom:1.2rem}
+  .form-group label{
+    display:block;font-size:.82rem;font-weight:600;
+    color:var(--gray-600);margin-bottom:.4rem;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .form-control{
+    width:100%;padding:.8rem 1rem;
+    border:1.5px solid var(--gray-200);
+    border-radius:var(--radius-sm);
+    font-family:inherit;font-size:.95rem;
+    color:var(--gray-800);
+    background:var(--gray-50);
+    transition:border-color var(--transition),box-shadow var(--transition),background var(--transition);
+    outline:none;
+  }
+  .form-control:focus{
+    border-color:var(--blue-400);
+    background:var(--white);
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+  }
+  .form-control::placeholder{color:var(--gray-400)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+    padding:.8rem 1.4rem;border-radius:var(--radius-sm);
+    font-family:inherit;font-size:.9rem;font-weight:600;
+    cursor:pointer;border:none;transition:all var(--transition);
+    white-space:nowrap;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg,var(--blue-500),var(--blue-400));
+    color:var(--white);
+    box-shadow:0 4px 14px rgba(37,99,235,.35);
+  }
+  .btn-primary:hover{
+    background:linear-gradient(135deg,var(--blue-600),var(--blue-500));
+    box-shadow:0 6px 20px rgba(37,99,235,.45);
+    transform:translateY(-1px);
+  }
+  .btn-primary:active{transform:translateY(0)}
+  .btn-secondary{
+    background:var(--gray-100);color:var(--gray-700);
+    border:1.5px solid var(--gray-200);
+  }
+  .btn-secondary:hover{background:var(--gray-200);border-color:var(--gray-300)}
+  .btn-ghost{background:transparent;color:var(--blue-500);padding:.5rem .75rem}
+  .btn-ghost:hover{background:var(--blue-50)}
+  .btn-danger{background:var(--danger);color:#fff;box-shadow:0 4px 12px rgba(239,68,68,.25)}
+  .btn-danger:hover{background:#dc2626;transform:translateY(-1px)}
+  .btn-success{background:var(--success);color:#fff;box-shadow:0 4px 12px rgba(16,185,129,.25)}
+  .btn-success:hover{background:#059669;transform:translateY(-1px)}
+  .btn-sm{padding:.5rem .9rem;font-size:.82rem}
+  .btn-block{width:100%}
+  .btn-icon{padding:.6rem;border-radius:var(--radius-sm)}
+  .login-error{
+    background:#fef2f2;border:1px solid #fecaca;
+    color:#dc2626;border-radius:var(--radius-sm);
+    padding:.75rem 1rem;font-size:.85rem;margin-bottom:1rem;
+    display:none;
+  }
+  .login-divider{
+    text-align:center;color:var(--gray-400);
+    font-size:.8rem;margin:1.5rem 0;position:relative;
+  }
+  .login-divider::before,.login-divider::after{
+    content:'';position:absolute;top:50%;
+    width:40%;height:1px;background:var(--gray-200);
+  }
+  .login-divider::before{left:0}
+  .login-divider::after{right:0}
+  .demo-accounts{
+    background:var(--blue-50);border:1px solid var(--blue-100);
+    border-radius:var(--radius-sm);padding:1rem;
+  }
+  .demo-accounts h4{font-size:.78rem;font-weight:700;color:var(--blue-600);margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+  .demo-account{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.3rem 0;border-bottom:1px solid rgba(37,99,235,.08);
+    cursor:pointer;
+  }
+  .demo-account:last-child{border-bottom:none}
+  .demo-account:hover .demo-cred{color:var(--blue-500)}
+  .demo-role{font-size:.78rem;font-weight:600;color:var(--gray-600)}
+  .demo-cred{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--gray-400);transition:color var(--transition)}
+
+  /* ===== APP SHELL ===== */
+  #app{display:flex;flex-direction:column;min-height:100vh;display:none}
+
+  /* ===== TOPBAR ===== */
+  .topbar{
+    height:64px;background:var(--white);
+    border-bottom:1px solid var(--gray-200);
+    display:flex;align-items:center;
+    padding:0 1.5rem;gap:1rem;
+    position:sticky;top:0;z-index:100;
+    box-shadow:var(--shadow-sm);
+  }
+  .topbar-logo{
+    display:flex;align-items:center;gap:.75rem;
+    text-decoration:none;margin-right:.5rem;
+  }
+  .topbar-logo-img{
+    width:36px;height:36px;border-radius:9px;
+    background:linear-gradient(135deg,var(--blue-600),var(--blue-400));
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;box-shadow:0 2px 8px rgba(37,99,235,.3);
+  }
+  .topbar-logo-img img{width:26px;height:26px;object-fit:contain}
+  .topbar-logo-text{font-size:1.15rem;font-weight:800;color:var(--blue-800)}
+  .topbar-logo-text span{color:var(--blue-400)}
+  .topbar-search{
+    flex:1;max-width:400px;
+    display:flex;align-items:center;gap:.5rem;
+    background:var(--gray-100);border:1.5px solid var(--gray-200);
+    border-radius:var(--radius-sm);padding:.5rem .9rem;
+    transition:all var(--transition);
+  }
+  .topbar-search:focus-within{
+    background:var(--white);border-color:var(--blue-300);
+    box-shadow:0 0 0 3px rgba(37,99,235,.1);
+  }
+  .topbar-search svg{color:var(--gray-400);flex-shrink:0}
+  .topbar-search input{
+    background:none;border:none;outline:none;
+    font-family:inherit;font-size:.9rem;color:var(--gray-700);
+    width:100%;
+  }
+  .topbar-search input::placeholder{color:var(--gray-400)}
+  .topbar-right{display:flex;align-items:center;gap:.75rem;margin-left:auto}
+  .notif-btn{
+    width:38px;height:38px;border-radius:var(--radius-sm);
+    background:var(--gray-100);border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--gray-500);transition:all var(--transition);
+    position:relative;
+  }
+  .notif-btn:hover{background:var(--blue-50);color:var(--blue-500)}
+  .notif-badge{
+    position:absolute;top:6px;right:6px;
+    width:8px;height:8px;border-radius:50%;
+    background:var(--danger);border:2px solid var(--white);
+  }
+  .user-avatar{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(135deg,var(--blue-600),var(--blue-400));
+    display:flex;align-items:center;justify-content:center;
+    color:var(--white);font-weight:700;font-size:.88rem;
+    cursor:pointer;flex-shrink:0;
+    box-shadow:0 2px 8px rgba(37,99,235,.3);
+    position:relative;
+  }
+  .user-menu{
+    position:absolute;top:calc(100% + 8px);right:0;
+    background:var(--white);border-radius:var(--radius);
+    box-shadow:var(--shadow-xl);border:1px solid var(--gray-200);
+    min-width:220px;z-index:200;
+    opacity:0;pointer-events:none;transform:translateY(-8px);
+    transition:all var(--transition);
+  }
+  .user-menu.open{opacity:1;pointer-events:all;transform:translateY(0)}
+  .user-menu-header{padding:1rem;border-bottom:1px solid var(--gray-100)}
+  .user-menu-name{font-weight:700;font-size:.95rem;color:var(--gray-800)}
+  .user-menu-role{font-size:.78rem;color:var(--gray-500);margin-top:.15rem}
+  .user-menu-item{
+    display:flex;align-items:center;gap:.75rem;
+    padding:.7rem 1rem;cursor:pointer;
+    font-size:.88rem;color:var(--gray-700);
+    transition:background var(--transition);
+  }
+  .user-menu-item:hover{background:var(--gray-50)}
+  .user-menu-item svg{color:var(--gray-400);flex-shrink:0}
+  .user-menu-item.danger{color:var(--danger)}
+  .user-menu-item.danger svg{color:var(--danger)}
+  .user-menu-item.danger:hover{background:#fef2f2}
+  .user-menu-divider{height:1px;background:var(--gray-100);margin:.25rem 0}
+
+  /* ===== LAYOUT ===== */
+  .app-body{display:flex;flex:1;overflow:hidden;height:calc(100vh - 64px)}
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{
+    width:240px;background:var(--white);
+    border-right:1px solid var(--gray-200);
+    display:flex;flex-direction:column;
+    overflow-y:auto;flex-shrink:0;
+  }
+  .sidebar-section{padding:1.25rem 1rem .5rem}
+  .sidebar-section-title{
+    font-size:.7rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--gray-400);margin-bottom:.5rem;
+    padding:0 .5rem;
+  }
+  .sidebar-item{
+    display:flex;align-items:center;gap:.65rem;
+    padding:.6rem .75rem;border-radius:var(--radius-sm);
+    cursor:pointer;font-size:.88rem;color:var(--gray-600);font-weight:500;
+    transition:all var(--transition);text-decoration:none;
+  }
+  .sidebar-item:hover{background:var(--blue-50);color:var(--blue-600)}
+  .sidebar-item.active{
+    background:linear-gradient(135deg,var(--blue-50),#e0f2fe);
+    color:var(--blue-600);font-weight:600;
+  }
+  .sidebar-item svg{flex-shrink:0;opacity:.8}
+  .sidebar-item.active svg{opacity:1}
+  .sidebar-item-badge{
+    margin-left:auto;background:var(--blue-100);
+    color:var(--blue-600);font-size:.7rem;font-weight:700;
+    padding:.1rem .45rem;border-radius:99px;
+  }
+  .sidebar-divider{height:1px;background:var(--gray-100);margin:.5rem 1rem}
+  .sidebar-storage{
+    margin:1rem;padding:1rem;
+    background:linear-gradient(135deg,var(--blue-50),#e0f2fe);
+    border-radius:var(--radius);border:1px solid var(--blue-100);
+  }
+  .sidebar-storage-label{
+    font-size:.78rem;color:var(--blue-700);
+    font-weight:600;margin-bottom:.5rem;
+  }
+  .storage-bar{
+    height:5px;background:var(--blue-100);
+    border-radius:99px;overflow:hidden;margin-bottom:.4rem;
+  }
+  .storage-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--blue-400),var(--accent));
+    border-radius:99px;width:35%;
+    transition:width .5s ease;
+  }
+  .storage-text{font-size:.73rem;color:var(--blue-600)}
+
+  /* ===== MAIN CONTENT ===== */
+  .main-content{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+  /* ===== BREADCRUMB ===== */
+  .breadcrumb-bar{
+    padding:1rem 1.5rem .75rem;
+    border-bottom:1px solid var(--gray-200);
+    background:var(--white);
+    display:flex;align-items:center;gap:1rem;
+    flex-wrap:wrap;
+  }
+  .breadcrumb{display:flex;align-items:center;gap:.25rem;flex:1;flex-wrap:wrap}
+  .breadcrumb-item{
+    font-size:.85rem;color:var(--gray-500);cursor:pointer;
+    padding:.2rem .4rem;border-radius:5px;
+    transition:all var(--transition);font-weight:500;
+    display:flex;align-items:center;gap:.3rem;
+  }
+  .breadcrumb-item:hover{color:var(--blue-500);background:var(--blue-50)}
+  .breadcrumb-item.active{color:var(--gray-800);font-weight:600;cursor:default}
+  .breadcrumb-item.active:hover{background:transparent;color:var(--gray-800)}
+  .breadcrumb-sep{color:var(--gray-300);font-size:.8rem}
+  .breadcrumb-actions{display:flex;align-items:center;gap:.5rem}
+
+  /* ===== FILE GRID ===== */
+  .files-area{padding:1.5rem;flex:1}
+  .files-toolbar{
+    display:flex;align-items:center;gap:.75rem;
+    margin-bottom:1.25rem;flex-wrap:wrap;
+  }
+  .files-toolbar-left{display:flex;align-items:center;gap:.5rem;flex:1;min-width:0}
+  .view-toggle{
+    display:flex;border:1.5px solid var(--gray-200);
+    border-radius:var(--radius-sm);overflow:hidden;
+  }
+  .view-btn{
+    padding:.45rem .65rem;border:none;background:none;
+    cursor:pointer;color:var(--gray-400);
+    transition:all var(--transition);
+  }
+  .view-btn.active{background:var(--blue-500);color:var(--white)}
+  .view-btn:hover:not(.active){background:var(--gray-100);color:var(--gray-600)}
+  .sort-select{
+    padding:.45rem .75rem;border:1.5px solid var(--gray-200);
+    border-radius:var(--radius-sm);font-family:inherit;
+    font-size:.82rem;color:var(--gray-600);
+    background:var(--white);cursor:pointer;outline:none;
+  }
+  .sort-select:focus{border-color:var(--blue-300)}
+  .files-count{font-size:.82rem;color:var(--gray-500);margin-left:.5rem}
+  .file-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+    gap:1rem;
+  }
+  .file-grid.list-view{grid-template-columns:1fr;gap:.35rem}
+  .file-card{
+    background:var(--white);
+    border:1.5px solid var(--gray-200);
+    border-radius:var(--radius);
+    padding:1rem;cursor:pointer;
+    transition:all var(--transition);
+    position:relative;
+    display:flex;flex-direction:column;align-items:center;
+    text-align:center;gap:.5rem;
+    user-select:none;
+  }
+  .file-card:hover{
+    border-color:var(--blue-300);
+    box-shadow:var(--shadow-md);
+    transform:translateY(-2px);
+  }
+  .file-card.selected{
+    border-color:var(--blue-400);
+    background:var(--blue-50);
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+  }
+  .file-grid.list-view .file-card{
+    flex-direction:row;text-align:left;padding:.6rem 1rem;
+    transform:none!important;
+  }
+  .file-grid.list-view .file-card:hover{transform:none!important}
+  .file-icon{
+    width:56px;height:56px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.6rem;flex-shrink:0;
+    position:relative;overflow:hidden;
+  }
+  .file-grid.list-view .file-icon{width:36px;height:36px;font-size:1.1rem;border-radius:8px}
+  .file-icon.folder{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#d97706}
+  .file-icon.pdf{background:linear-gradient(135deg,#fee2e2,#fecaca);color:#dc2626}
+  .file-icon.doc{background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#2563eb}
+  .file-icon.img{background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#059669}
+  .file-icon.xls{background:linear-gradient(135deg,#dcfce7,#bbf7d0);color:#16a34a}
+  .file-icon.ppt{background:linear-gradient(135deg,#ffedd5,#fed7aa);color:#ea580c}
+  .file-icon.zip{background:linear-gradient(135deg,#f3e8ff,#e9d5ff);color:#9333ea}
+  .file-icon.txt{background:linear-gradient(135deg,var(--gray-100),var(--gray-200));color:var(--gray-600)}
+  .file-name{
+    font-size:.82rem;font-weight:600;color:var(--gray-800);
+    word-break:break-word;line-height:1.3;
+  }
+  .file-grid.list-view .file-name{flex:1;font-size:.88rem}
+  .file-meta{font-size:.72rem;color:var(--gray-400)}
+  .file-grid.list-view .file-meta{font-size:.78rem;min-width:120px;text-align:right}
+  .file-role-badge{
+    font-size:.65rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.04em;padding:.15rem .45rem;
+    border-radius:99px;
+  }
+  .file-card-menu-btn{
+    position:absolute;top:.5rem;right:.5rem;
+    width:26px;height:26px;border-radius:6px;
+    border:none;background:transparent;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    color:var(--gray-400);opacity:0;transition:all var(--transition);
+  }
+  .file-grid.list-view .file-card-menu-btn{position:relative;opacity:0;top:auto;right:auto}
+  .file-card:hover .file-card-menu-btn{opacity:1}
+  .file-card-menu-btn:hover{background:var(--gray-100);color:var(--gray-700)}
+  .empty-state{
+    display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:4rem 2rem;text-align:center;
+    color:var(--gray-400);
+  }
+  .empty-state-icon{
+    font-size:4rem;margin-bottom:1rem;opacity:.5;
+  }
+  .empty-state h3{font-size:1.1rem;color:var(--gray-600);margin-bottom:.4rem}
+  .empty-state p{font-size:.85rem;max-width:280px;line-height:1.5}
+
+  /* ===== MODAL ===== */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(10,22,40,.55);
+    z-index:500;display:flex;align-items:center;justify-content:center;
+    padding:1rem;
+    opacity:0;pointer-events:none;transition:opacity var(--transition);
+    backdrop-filter:blur(4px);
+  }
+  .modal-overlay.open{opacity:1;pointer-events:all}
+  .modal{
+    background:var(--white);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-xl);width:100%;max-width:480px;
+    transform:translateY(20px) scale(.97);
+    transition:transform var(--transition);
+    overflow:hidden;max-height:90vh;overflow-y:auto;
+  }
+  .modal-overlay.open .modal{transform:none}
+  .modal-header{
+    padding:1.5rem 1.5rem 1rem;
+    border-bottom:1px solid var(--gray-100);
+    display:flex;align-items:center;gap:.75rem;
+  }
+  .modal-icon{
+    width:44px;height:44px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;font-size:1.3rem;
+  }
+  .modal-icon.folder{background:linear-gradient(135deg,#fef3c7,#fde68a)}
+  .modal-icon.upload{background:linear-gradient(135deg,var(--blue-100),#bfdbfe)}
+  .modal-icon.user{background:linear-gradient(135deg,#d1fae5,#a7f3d0)}
+  .modal-icon.warn{background:linear-gradient(135deg,#fee2e2,#fecaca)}
+  .modal-title{font-size:1.1rem;font-weight:700;color:var(--gray-800)}
+  .modal-subtitle{font-size:.82rem;color:var(--gray-500);margin-top:.15rem}
+  .modal-close{
+    margin-left:auto;width:32px;height:32px;
+    border-radius:8px;border:none;background:var(--gray-100);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    color:var(--gray-500);transition:all var(--transition);
+  }
+  .modal-close:hover{background:var(--gray-200);color:var(--gray-700)}
+  .modal-body{padding:1.25rem 1.5rem}
+  .modal-footer{
+    padding:1rem 1.5rem;border-top:1px solid var(--gray-100);
+    display:flex;align-items:center;justify-content:flex-end;gap:.75rem;
+  }
+  .roles-checkboxes{display:flex;flex-direction:column;gap:.4rem}
+  .role-checkbox{
+    display:flex;align-items:center;gap:.75rem;
+    padding:.5rem .75rem;border-radius:var(--radius-sm);
+    cursor:pointer;transition:background var(--transition);
+  }
+  .role-checkbox:hover{background:var(--gray-50)}
+  .role-checkbox input[type=checkbox]{
+    width:16px;height:16px;accent-color:var(--blue-500);cursor:pointer;
+  }
+  .role-checkbox-label{font-size:.88rem;color:var(--gray-700);font-weight:500;flex:1}
+  .role-badge{
+    font-size:.7rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.04em;padding:.2rem .55rem;border-radius:99px;
+  }
+  .role-Stagiaire{background:#f0fdf4;color:#16a34a}
+  .role-Infirmier{background:#eff6ff;color:#2563eb}
+  .role-ApprentiMedecin{background:#fef3c7;color:#d97706}
+  .role-Medecin{background:#fff1f2;color:#e11d48}
+  .role-ApprentiChirurgien{background:#fdf4ff;color:#9333ea}
+  .role-Chirurgien{background:#fff7ed;color:#ea580c}
+  .role-Direction{background:#1e3a5f;color:#93c5fd}
+  .role-Informaticien{background:#1a1a2e;color:#a78bfa}
+  .upload-zone{
+    border:2px dashed var(--blue-200);border-radius:var(--radius);
+    padding:2rem;text-align:center;cursor:pointer;
+    transition:all var(--transition);
+    background:var(--blue-50);
+  }
+  .upload-zone:hover,.upload-zone.drag-over{
+    border-color:var(--blue-400);background:#dbeafe;
+  }
+  .upload-zone-icon{font-size:2.5rem;margin-bottom:.75rem;opacity:.7}
+  .upload-zone p{font-size:.88rem;color:var(--blue-600);font-weight:500}
+  .upload-zone small{font-size:.78rem;color:var(--gray-400)}
+  .upload-file-list{margin-top:1rem;display:flex;flex-direction:column;gap:.4rem}
+  .upload-file-item{
+    display:flex;align-items:center;gap:.6rem;
+    padding:.5rem .75rem;background:var(--gray-50);
+    border-radius:var(--radius-sm);font-size:.82rem;
+  }
+  .upload-file-item svg{color:var(--blue-400);flex-shrink:0}
+  .upload-file-name{flex:1;truncate:1}
+  .upload-file-size{color:var(--gray-400);font-size:.75rem}
+
+  /* ===== ADMIN PANEL ===== */
+  .admin-panel{padding:1.5rem}
+  .admin-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;
+  }
+  .admin-header h2{font-size:1.3rem;font-weight:700;color:var(--gray-800)}
+  .admin-tabs{
+    display:flex;gap:.25rem;
+    background:var(--gray-100);
+    border-radius:var(--radius-sm);padding:.25rem;
+    margin-bottom:1.5rem;
+  }
+  .admin-tab{
+    padding:.5rem 1rem;border-radius:6px;
+    font-size:.85rem;font-weight:600;cursor:pointer;
+    color:var(--gray-500);transition:all var(--transition);border:none;
+    background:none;font-family:inherit;
+  }
+  .admin-tab.active{
+    background:var(--white);color:var(--blue-600);
+    box-shadow:var(--shadow-sm);
+  }
+  .admin-tab:hover:not(.active){color:var(--gray-700)}
+  .users-table-wrap{
+    background:var(--white);border-radius:var(--radius);
+    border:1px solid var(--gray-200);overflow:hidden;
+    box-shadow:var(--shadow-sm);
+  }
+  table{width:100%;border-collapse:collapse}
+  thead{background:var(--gray-50);border-bottom:1px solid var(--gray-200)}
+  th{
+    padding:.75rem 1rem;text-align:left;
+    font-size:.75rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--gray-500);
+  }
+  td{padding:.8rem 1rem;border-bottom:1px solid var(--gray-100);font-size:.88rem;color:var(--gray-700)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--gray-50)}
+  .table-avatar{
+    width:32px;height:32px;border-radius:8px;
+    background:linear-gradient(135deg,var(--blue-500),var(--blue-400));
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:.78rem;font-weight:700;
+  }
+
+  /* ===== TOAST ===== */
+  #toast-container{
+    position:fixed;bottom:1.5rem;right:1.5rem;
+    z-index:9999;display:flex;flex-direction:column;gap:.5rem;
+    pointer-events:none;
+  }
+  .toast{
+    background:var(--gray-800);color:var(--white);
+    border-radius:var(--radius-sm);padding:.75rem 1.1rem;
+    font-size:.85rem;font-weight:500;
+    display:flex;align-items:center;gap:.6rem;
+    box-shadow:var(--shadow-lg);pointer-events:all;
+    animation:toast-in .3s ease forwards;
+    max-width:320px;
+  }
+  .toast.success{background:linear-gradient(135deg,#065f46,#047857)}
+  .toast.error{background:linear-gradient(135deg,#7f1d1d,#991b1b)}
+  .toast.info{background:linear-gradient(135deg,var(--blue-800),var(--blue-600))}
+  @keyframes toast-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+  @keyframes toast-out{from{opacity:1;transform:none}to{opacity:0;transform:translateX(20px)}}
+  .toast.out{animation:toast-out .3s ease forwards}
+
+  /* ===== CONTEXT MENU ===== */
+  .context-menu{
+    position:fixed;background:var(--white);
+    border-radius:var(--radius-sm);box-shadow:var(--shadow-xl);
+    border:1px solid var(--gray-200);z-index:300;
+    min-width:180px;overflow:hidden;
+    opacity:0;pointer-events:none;
+    transition:opacity .15s ease,transform .15s ease;
+    transform:scale(.95);transform-origin:top left;
+  }
+  .context-menu.open{opacity:1;pointer-events:all;transform:scale(1)}
+  .ctx-item{
+    display:flex;align-items:center;gap:.65rem;
+    padding:.6rem .9rem;cursor:pointer;
+    font-size:.85rem;color:var(--gray-700);
+    transition:background var(--transition);
+  }
+  .ctx-item:hover{background:var(--gray-50);color:var(--blue-600)}
+  .ctx-item svg{color:var(--gray-400);flex-shrink:0}
+  .ctx-item:hover svg{color:var(--blue-400)}
+  .ctx-item.danger{color:var(--danger)}
+  .ctx-item.danger svg{color:var(--danger)}
+  .ctx-item.danger:hover{background:#fef2f2}
+  .ctx-divider{height:1px;background:var(--gray-100);margin:.2rem 0}
+
+  /* ===== RESPONSIVE ===== */
+  @media(max-width:768px){
+    .login-left{display:none}
+    .login-right{width:100%;min-height:100vh}
+    .sidebar{width:56px;overflow:hidden}
+    .sidebar-item span,.sidebar-section-title,.sidebar-storage,.sidebar-item-badge{display:none}
+    .sidebar-item{justify-content:center;padding:.7rem}
+    .file-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .fade-in{animation:fadeIn .3s ease forwards}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .pulse{animation:pulse 1.5s infinite}
+
+  /* ===== CHIPS / TAGS ===== */
+  .chip{
+    display:inline-flex;align-items:center;gap:.3rem;
+    padding:.2rem .6rem;border-radius:99px;
+    font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  }
+
+  /* ===== PERMISSION INDICATOR ===== */
+  .perm-indicator{
+    display:flex;align-items:center;gap:.3rem;
+    font-size:.75rem;color:var(--gray-500);
+    padding:.15rem .5rem;border-radius:99px;
+    background:var(--gray-100);
+  }
+  .perm-indicator.allowed{background:#f0fdf4;color:var(--success)}
+  .perm-indicator.denied{background:#fef2f2;color:var(--danger)}
+
+  /* ===== STATS CARDS ===== */
+  .stats-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    gap:1rem;margin-bottom:1.5rem;
+  }
+  .stat-card{
+    background:var(--white);border-radius:var(--radius);
+    border:1px solid var(--gray-200);padding:1.25rem;
+    box-shadow:var(--shadow-sm);
+    display:flex;align-items:center;gap:1rem;
+  }
+  .stat-icon{
+    width:48px;height:48px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.4rem;flex-shrink:0;
+  }
+  .stat-icon.blue{background:linear-gradient(135deg,var(--blue-100),#bfdbfe)}
+  .stat-icon.green{background:linear-gradient(135deg,#d1fae5,#a7f3d0)}
+  .stat-icon.purple{background:linear-gradient(135deg,#f3e8ff,#e9d5ff)}
+  .stat-icon.orange{background:linear-gradient(135deg,#ffedd5,#fed7aa)}
+  .stat-value{font-size:1.6rem;font-weight:800;color:var(--gray-800);line-height:1}
+  .stat-label{font-size:.78rem;color:var(--gray-500);margin-top:.2rem;font-weight:500}
+
+  /* FOLDER PERMISSION COLORS */
+  .folder-perm-all{border-top:3px solid #22c55e}
+  .folder-perm-restricted{border-top:3px solid #f59e0b}
+  .folder-perm-private{border-top:3px solid #ef4444}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN PAGE ===== -->
+<div id="login-page">
+  <div class="login-grid-bg"></div>
+  <div class="login-left">
+    <div class="login-brand fade-in">
+      <div class="login-logo">
+        <img src="https://i.imgur.com/TH4LT2x.png" alt="Logo" onerror="this.style.display='none';this.parentNode.innerHTML='🏥'">
+      </div>
+      <h1>Medi<br>Cloud</h1>
+      <p>Plateforme sécurisée de gestion documentaire pour les établissements de santé.</p>
+      <div class="login-features">
+        <div class="login-feature"><div class="login-feature-dot"></div><span>Accès basé sur les rôles médicaux</span></div>
+        <div class="login-feature"><div class="login-feature-dot"></div><span>Stockage chiffré & sécurisé</span></div>
+        <div class="login-feature"><div class="login-feature-dot"></div><span>Gestion de dossiers par permissions</span></div>
+        <div class="login-feature"><div class="login-feature-dot"></div><span>Traçabilité complète des accès</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="login-right">
+    <div class="login-form-wrap fade-in">
+      <div class="login-form-header">
+        <h2>Connexion</h2>
+        <p>Accédez à votre espace documentaire sécurisé</p>
+      </div>
+      <div id="login-error" class="login-error">Identifiants incorrects. Veuillez réessayer.</div>
+      <div class="form-group">
+        <label>Identifiant</label>
+        <input class="form-control" id="login-user" type="text" placeholder="Votre identifiant" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input class="form-control" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()" style="margin-top:.5rem;padding:1rem">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Se connecter
+      </button>
+      <div class="login-divider">Comptes de démonstration</div>
+      <div class="demo-accounts">
+        <h4>Connexion rapide</h4>
+        <div class="demo-account" onclick="quickLogin('admin','admin123')">
+          <span class="demo-role">Direction (Admin)</span>
+          <span class="demo-cred">admin / admin123</span>
+        </div>
+        <div class="demo-account" onclick="quickLogin('it','it123')">
+          <span class="demo-role">Informaticien</span>
+          <span class="demo-cred">it / it123</span>
+        </div>
+        <div class="demo-account" onclick="quickLogin('dr.martin','med123')">
+          <span class="demo-role">Médecin</span>
+          <span class="demo-cred">dr.martin / med123</span>
+        </div>
+        <div class="demo-account" onclick="quickLogin('nurse1','inf123')">
+          <span class="demo-role">Infirmier</span>
+          <span class="demo-cred">nurse1 / inf123</span>
+        </div>
+        <div class="demo-account" onclick="quickLogin('intern1','stg123')">
+          <span class="demo-role">Stagiaire</span>
+          <span class="demo-cred">intern1 / stg123</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="topbar-logo-img">
+        <img src="https://i.imgur.com/TH4LT2x.png" alt="Logo" onerror="this.style.display='none';this.parentNode.innerHTML='🏥'">
+      </div>
+      <span class="topbar-logo-text">Medi<span>Cloud</span></span>
+    </div>
+    <div class="topbar-search">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search-input" type="text" placeholder="Rechercher fichiers, dossiers…" oninput="doSearch(this.value)">
+    </div>
+    <div class="topbar-right">
+      <button class="notif-btn" title="Notifications">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div class="notif-badge"></div>
+      </button>
+      <div class="user-avatar" id="user-avatar-btn" onclick="toggleUserMenu()">
+        <span id="user-initials">--</span>
+        <div class="user-menu" id="user-menu">
+          <div class="user-menu-header">
+            <div class="user-menu-name" id="user-menu-name">–</div>
+            <div class="user-menu-role" id="user-menu-role">–</div>
+          </div>
+          <div class="user-menu-item" onclick="showSection('cloud');closeUserMenu()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Mon espace</span>
+          </div>
+          <div class="user-menu-divider"></div>
+          <div class="user-menu-item danger" onclick="doLogout()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Déconnexion</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="app-body">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><span>Navigation</span></div>
+        <div class="sidebar-item active" id="nav-cloud" onclick="showSection('cloud')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span>Mes fichiers</span>
+        </div>
+        <div class="sidebar-item" id="nav-recent" onclick="showSection('recent')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Récents</span>
+        </div>
+        <div class="sidebar-item" id="nav-shared" onclick="showSection('shared')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Partagés</span>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section" id="admin-section" style="display:none">
+        <div class="sidebar-section-title"><span>Administration</span></div>
+        <div class="sidebar-item" id="nav-admin" onclick="showSection('admin')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span>Gestion utilisateurs</span>
+        </div>
+        <div class="sidebar-item" id="nav-logs" onclick="showSection('logs')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span>Journaux d'accès</span>
+        </div>
+      </div>
+      <div class="sidebar-storage" id="storage-widget">
+        <div class="sidebar-storage-label">💾 Stockage utilisé</div>
+        <div class="storage-bar"><div class="storage-fill" id="storage-fill"></div></div>
+        <div class="storage-text" id="storage-text">–</div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main-content" id="main-content">
+
+      <!-- CLOUD SECTION -->
+      <div id="section-cloud">
+        <div class="breadcrumb-bar">
+          <div class="breadcrumb" id="breadcrumb-trail"></div>
+          <div class="breadcrumb-actions" id="breadcrumb-actions"></div>
+        </div>
+        <div class="files-area">
+          <div class="files-toolbar">
+            <div class="files-toolbar-left">
+              <div class="view-toggle">
+                <button class="view-btn active" id="grid-btn" onclick="setView('grid')" title="Grille">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </button>
+                <button class="view-btn" id="list-btn" onclick="setView('list')" title="Liste">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </button>
+              </div>
+              <select class="sort-select" id="sort-select" onchange="renderFiles()">
+                <option value="name">Trier : Nom</option>
+                <option value="date">Trier : Date</option>
+                <option value="size">Trier : Taille</option>
+                <option value="type">Trier : Type</option>
+              </select>
+              <span class="files-count" id="files-count"></span>
+            </div>
+          </div>
+          <div class="file-grid" id="file-grid"></div>
+        </div>
+      </div>
+
+      <!-- RECENT SECTION -->
+      <div id="section-recent" class="hidden">
+        <div class="files-area">
+          <h2 style="font-size:1.2rem;font-weight:700;color:var(--gray-800);margin-bottom:1.25rem">Fichiers récents</h2>
+          <div class="file-grid" id="recent-grid"></div>
+        </div>
+      </div>
+
+      <!-- SHARED SECTION -->
+      <div id="section-shared" class="hidden">
+        <div class="files-area">
+          <h2 style="font-size:1.2rem;font-weight:700;color:var(--gray-800);margin-bottom:1.25rem">Fichiers partagés avec moi</h2>
+          <div class="file-grid" id="shared-grid"></div>
+        </div>
+      </div>
+
+      <!-- ADMIN SECTION -->
+      <div id="section-admin" class="hidden admin-panel">
+        <div class="admin-header">
+          <h2>Gestion des utilisateurs</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('add-user')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Ajouter utilisateur
+          </button>
+        </div>
+        <div class="stats-grid" id="admin-stats"></div>
+        <div class="users-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Utilisateur</th>
+                <th>Rôle</th>
+                <th>Dernière connexion</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LOGS SECTION -->
+      <div id="section-logs" class="hidden admin-panel">
+        <div class="admin-header">
+          <h2>Journaux d'accès</h2>
+        </div>
+        <div class="users-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Horodatage</th>
+                <th>Utilisateur</th>
+                <th>Action</th>
+                <th>Élément</th>
+              </tr>
+            </thead>
+            <tbody id="logs-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Create Folder Modal -->
+<div class="modal-overlay" id="modal-create-folder">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon folder">📁</div>
+      <div>
+        <div class="modal-title">Nouveau dossier</div>
+        <div class="modal-subtitle">Définissez le nom et les permissions d'accès</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('create-folder')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nom du dossier</label>
+        <input class="form-control" id="folder-name" type="text" placeholder="Ex: Dossiers Patients 2024">
+      </div>
+      <div class="form-group">
+        <label>Rôles autorisés à accéder</label>
+        <div class="roles-checkboxes" id="folder-roles-checks"></div>
+      </div>
+      <div class="form-group">
+        <label>Permission de modification</label>
+        <select class="form-control" id="folder-write-perm">
+          <option value="admin">Direction & Informaticien uniquement</option>
+          <option value="medecin">Médecins et supérieurs</option>
+          <option value="tous">Tous les rôles autorisés</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('create-folder')">Annuler</button>
+      <button class="btn btn-primary" onclick="doCreateFolder()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Créer le dossier
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="modal-upload">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon upload">📤</div>
+      <div>
+        <div class="modal-title">Importer des fichiers</div>
+        <div class="modal-subtitle" id="upload-subtitle">Dans le dossier courant</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('upload')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDrop(event)">
+        <div class="upload-zone-icon">☁️</div>
+        <p>Cliquez ou glissez vos fichiers ici</p>
+        <small>PDF, DOC, XLS, PNG, JPG, ZIP, … (max 50 Mo)</small>
+        <input type="file" id="file-input" multiple style="display:none" onchange="handleFileSelect(this.files)">
+      </div>
+      <div class="upload-file-list" id="upload-file-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('upload')">Annuler</button>
+      <button class="btn btn-primary" onclick="doUpload()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        Importer (<span id="upload-count">0</span> fichier(s))
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay" id="modal-add-user">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon user">👤</div>
+      <div>
+        <div class="modal-title">Nouvel utilisateur</div>
+        <div class="modal-subtitle">Créer un compte d'accès</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('add-user')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nom complet</label>
+        <input class="form-control" id="new-user-name" type="text" placeholder="Dr. Jean Dupont">
+      </div>
+      <div class="form-group">
+        <label>Identifiant</label>
+        <input class="form-control" id="new-user-id" type="text" placeholder="jean.dupont">
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input class="form-control" id="new-user-pass" type="password" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label>Rôle</label>
+        <select class="form-control" id="new-user-role">
+          <option value="Stagiaire">Stagiaire</option>
+          <option value="Infirmier">Infirmier</option>
+          <option value="Apprenti Médecin">Apprenti Médecin</option>
+          <option value="Médecin">Médecin</option>
+          <option value="Apprenti Chirurgien">Apprenti Chirurgien</option>
+          <option value="Chirurgien">Chirurgien</option>
+          <option value="Direction">Direction</option>
+        </select>
+        <small style="color:var(--gray-400);font-size:.75rem;margin-top:.3rem;display:block">⚠️ Le rôle Informaticien ne peut être attribué que via la base de données.</small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('add-user')">Annuler</button>
+      <button class="btn btn-success" onclick="doAddUser()">Créer le compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-icon warn">⚠️</div>
+      <div>
+        <div class="modal-title">Confirmer la suppression</div>
+        <div class="modal-subtitle" id="delete-subtitle">Cette action est irréversible.</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('delete')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.9rem;color:var(--gray-600);line-height:1.6">Vous êtes sur le point de supprimer <strong id="delete-item-name">cet élément</strong>. Cette action est permanente et ne peut pas être annulée.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('delete')">Annuler</button>
+      <button class="btn btn-danger" onclick="doDelete()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Supprimer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="context-menu" id="context-menu">
+  <div class="ctx-item" id="ctx-open" onclick="ctxOpen()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    Ouvrir
+  </div>
+  <div class="ctx-item" id="ctx-download" onclick="ctxDownload()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Télécharger
+  </div>
+  <div class="ctx-item" id="ctx-rename" onclick="ctxRename()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Renommer
+  </div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item danger" id="ctx-delete" onclick="ctxDelete()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    Supprimer
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<script>
+// ===== DATA =====
+const ROLES = ['Stagiaire','Infirmier','Apprenti Médecin','Médecin','Apprenti Chirurgien','Chirurgien','Direction','Informaticien'];
+const ROLE_KEYS = {'Stagiaire':'Stagiaire','Infirmier':'Infirmier','Apprenti Médecin':'ApprentiMedecin','Médecin':'Medecin','Apprenti Chirurgien':'ApprentiChirurgien','Chirurgien':'Chirurgien','Direction':'Direction','Informaticien':'Informaticien'};
+const ROLE_COLORS = {'Stagiaire':'#16a34a','Infirmier':'#2563eb','Apprenti Médecin':'#d97706','Médecin':'#e11d48','Apprenti Chirurgien':'#9333ea','Chirurgien':'#ea580c','Direction':'#1d4ed8','Informaticien':'#7c3aed'};
+const ROLE_BG = {'Stagiaire':'#f0fdf4','Infirmier':'#eff6ff','Apprenti Médecin':'#fef3c7','Médecin':'#fff1f2','Apprenti Chirurgien':'#fdf4ff','Chirurgien':'#fff7ed','Direction':'#dbeafe','Informaticien':'#ede9fe'};
+
+let USERS = [
+  {id:'admin',name:'Marie Directrice',pass:'admin123',role:'Direction',lastLogin:'Aujourd\'hui 09:12',active:true},
+  {id:'it',name:'Pierre Informaticien',pass:'it123',role:'Informaticien',lastLogin:'Aujourd\'hui 08:45',active:true},
+  {id:'dr.martin',name:'Dr. Paul Martin',pass:'med123',role:'Médecin',lastLogin:'Hier 17:30',active:true},
+  {id:'nurse1',name:'Sophie Infirmière',pass:'inf123',role:'Infirmier',lastLogin:'Aujourd\'hui 11:00',active:true},
+  {id:'intern1',name:'Lucas Stagiaire',pass:'stg123',role:'Stagiaire',lastLogin:'Il y a 2 jours',active:true},
+  {id:'chir1',name:'Dr. Anne Chirurgien',pass:'chir123',role:'Chirurgien',lastLogin:'Hier 14:20',active:true},
+  {id:'appmed1',name:'Emma Apprentie',pass:'app123',role:'Apprenti Médecin',lastLogin:'Aujourd\'hui 10:15',active:true},
+];
+
+// File system: {id, name, type:'folder'|file, parentId:null|id, roles:[], size?, ext?, created, uploadedBy}
+let FS = [
+  {id:'f1',name:'Dossiers Patients',type:'folder',parentId:null,roles:['Médecin','Chirurgien','Apprenti Médecin','Apprenti Chirurgien','Infirmier','Direction','Informaticien'],writePerm:'medecin',created:'2024-03-10',uploadedBy:'admin'},
+  {id:'f2',name:'Protocoles Chirurgicaux',type:'folder',parentId:null,roles:['Chirurgien','Apprenti Chirurgien','Direction','Informaticien'],writePerm:'admin',created:'2024-03-12',uploadedBy:'admin'},
+  {id:'f3',name:'Ressources Internes',type:'folder',parentId:null,roles:ROLES,writePerm:'admin',created:'2024-03-15',uploadedBy:'admin'},
+  {id:'f4',name:'Administration',type:'folder',parentId:null,roles:['Direction','Informaticien'],writePerm:'admin',created:'2024-03-15',uploadedBy:'admin'},
+  {id:'f5',name:'Formation Stagiaires',type:'folder',parentId:null,roles:ROLES,writePerm:'admin',created:'2024-03-18',uploadedBy:'admin'},
+  // Files in f1
+  {id:'fi1',name:'Patient_Dupont_Jean.pdf',type:'file',parentId:'f1',ext:'pdf',size:'2.4 Mo',created:'2024-03-20',uploadedBy:'dr.martin'},
+  {id:'fi2',name:'Compte_rendu_op_032024.docx',type:'file',parentId:'f1',ext:'doc',size:'540 Ko',created:'2024-03-22',uploadedBy:'dr.martin'},
+  {id:'fi3',name:'Bilan_sanguin_Martin.pdf',type:'file',parentId:'f1',ext:'pdf',size:'820 Ko',created:'2024-03-23',uploadedBy:'nurse1'},
+  // Subfolders
+  {id:'f1a',name:'Urgences',type:'folder',parentId:'f1',roles:['Médecin','Chirurgien','Infirmier','Direction','Informaticien'],writePerm:'medecin',created:'2024-03-11',uploadedBy:'admin'},
+  // Files in f2
+  {id:'fi4',name:'Protocole_appendicectomie.pdf',type:'file',parentId:'f2',ext:'pdf',size:'1.2 Mo',created:'2024-03-14',uploadedBy:'chir1'},
+  {id:'fi5',name:'Fiche_anesthésie.docx',type:'file',parentId:'f2',ext:'doc',size:'340 Ko',created:'2024-03-14',uploadedBy:'chir1'},
+  // Files in f3
+  {id:'fi6',name:'Planning_Semaine_13.xlsx',type:'file',parentId:'f3',ext:'xls',size:'180 Ko',created:'2024-03-25',uploadedBy:'admin'},
+  {id:'fi7',name:'Organigramme_Hôpital.png',type:'file',parentId:'f3',ext:'img',size:'420 Ko',created:'2024-03-15',uploadedBy:'admin'},
+  // Files in f5
+  {id:'fi8',name:'Guide_Accueil_Stagiaire.pdf',type:'file',parentId:'f5',ext:'pdf',size:'3.1 Mo',created:'2024-03-18',uploadedBy:'admin'},
+  {id:'fi9',name:'Règlement_Intérieur.pdf',type:'file',parentId:'f5',ext:'pdf',size:'1.5 Mo',created:'2024-03-18',uploadedBy:'admin'},
+];
+
+let LOGS = [
+  {ts:'2024-03-26 09:12',user:'Marie Directrice',action:'Connexion',item:'–'},
+  {ts:'2024-03-26 09:15',user:'Marie Directrice',action:'Téléchargement',item:'Organigramme_Hôpital.png'},
+  {ts:'2024-03-26 08:45',user:'Pierre Informaticien',action:'Connexion',item:'–'},
+  {ts:'2024-03-26 08:50',user:'Pierre Informaticien',action:'Création dossier',item:'Administration'},
+  {ts:'2024-03-26 11:00',user:'Sophie Infirmière',action:'Connexion',item:'–'},
+  {ts:'2024-03-26 11:03',user:'Sophie Infirmière',action:'Téléchargement',item:'Bilan_sanguin_Martin.pdf'},
+  {ts:'2024-03-25 17:30',user:'Dr. Paul Martin',action:'Import fichier',item:'Patient_Dupont_Jean.pdf'},
+];
+
+// State
+let currentUser = null;
+let currentPath = []; // array of folder ids
+let currentView = 'grid';
+let contextTarget = null;
+let pendingDeleteId = null;
+let uploadFiles = [];
+
+// ===== AUTH =====
+function doLogin(){
+  const uid = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const u = USERS.find(u=>u.id===uid && u.pass===pass && u.active);
+  if(!u){
+    document.getElementById('login-error').style.display='block';
+    return;
+  }
+  loginUser(u);
+}
+
+function quickLogin(uid,pass){
+  document.getElementById('login-user').value=uid;
+  document.getElementById('login-pass').value=pass;
+  doLogin();
+}
+
+function loginUser(u){
+  currentUser=u;
+  document.getElementById('login-page').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('user-initials').textContent=u.name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('user-menu-name').textContent=u.name;
+  document.getElementById('user-menu-role').textContent=u.role;
+  // Admin sections
+  const isAdmin = u.role==='Direction'||u.role==='Informaticien';
+  document.getElementById('admin-section').style.display=isAdmin?'':'none';
+  // Storage
+  const usage = Math.floor(Math.random()*60)+10;
+  document.getElementById('storage-fill').style.width=usage+'%';
+  document.getElementById('storage-text').textContent=`${usage}% utilisé`;
+  // Log
+  addLog('Connexion','–');
+  currentPath=[];
+  showSection('cloud');
+  renderFiles();
+  if(isAdmin) renderAdminStats();
+  toast('Bienvenue, '+u.name+' !','success');
+  // Enter key
+  document.getElementById('login-pass').removeEventListener('keydown',loginEnter);
+}
+
+function doLogout(){
+  currentUser=null;
+  currentPath=[];
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-page').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').style.display='none';
+  closeUserMenu();
+}
+
+// ===== NAVIGATION =====
+function showSection(s){
+  ['cloud','recent','shared','admin','logs'].forEach(x=>{
+    document.getElementById('section-'+x).classList.toggle('hidden',x!==s);
+    const n=document.getElementById('nav-'+x);
+    if(n) n.classList.toggle('active',x===s);
+  });
+  if(s==='recent') renderRecent();
+  if(s==='shared') renderShared();
+  if(s==='admin'){renderAdminStats();renderUsersTable();}
+  if(s==='logs') renderLogs();
+}
+
+// ===== FILE SYSTEM HELPERS =====
+function canAccessFolder(folder){
+  if(!folder.roles) return true;
+  return folder.roles.includes(currentUser.role);
+}
+
+function canWrite(){
+  const pId = currentPath.length>0?currentPath[currentPath.length-1]:null;
+  if(!pId) return currentUser.role==='Direction'||currentUser.role==='Informaticien';
+  const folder = FS.find(f=>f.id===pId);
+  if(!folder) return false;
+  if(folder.writePerm==='admin') return currentUser.role==='Direction'||currentUser.role==='Informaticien';
+  if(folder.writePerm==='medecin') return ['Médecin','Chirurgien','Apprenti Médecin','Apprenti Chirurgien','Direction','Informaticien'].includes(currentUser.role);
+  return folder.roles.includes(currentUser.role);
+}
+
+function getCurrentItems(){
+  const pId = currentPath.length>0?currentPath[currentPath.length-1]:null;
+  return FS.filter(i=>i.parentId===pId).filter(i=>{
+    if(i.type==='folder') return canAccessFolder(i);
+    return true; // files inherit parent folder access
+  });
+}
+
+function getFileIcon(item){
+  if(item.type==='folder') return {cls:'folder',icon:'📁'};
+  const m={pdf:{cls:'pdf',icon:'📄'},doc:{cls:'doc',icon:'📝'},xls:{cls:'xls',icon:'📊'},img:{cls:'img',icon:'🖼️'},ppt:{cls:'ppt',icon:'📋'},zip:{cls:'zip',icon:'🗜️'},txt:{cls:'txt',icon:'📃'}};
+  return m[item.ext]||{cls:'txt',icon:'📎'};
+}
+
+function formatDate(d){
+  if(!d) return '–';
+  return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ===== RENDER =====
+function renderFiles(){
+  const items=getCurrentItems();
+  const sortBy=document.getElementById('sort-select').value;
+  items.sort((a,b)=>{
+    if(a.type!==b.type) return a.type==='folder'?-1:1;
+    if(sortBy==='name') return a.name.localeCompare(b.name);
+    if(sortBy==='date') return (b.created||'').localeCompare(a.created||'');
+    if(sortBy==='size') return (a.size||'').localeCompare(b.size||'');
+    return a.name.localeCompare(b.name);
+  });
+  const grid=document.getElementById('file-grid');
+  const count=document.getElementById('files-count');
+  count.textContent=`${items.length} élément(s)`;
+  if(!items.length){
+    grid.innerHTML=`<div class="empty-state fade-in"><div class="empty-state-icon">📂</div><h3>Dossier vide</h3><p>Aucun fichier ou dossier ici. ${canWrite()?'Créez un dossier ou importez des fichiers.':''}</p></div>`;
+    grid.style.display='block';
+    renderBreadcrumb();
+    return;
+  }
+  grid.style.display='';
+  grid.innerHTML='';
+  items.forEach(item=>{renderFileCard(item,grid);});
+  renderBreadcrumb();
+}
+
+function renderFileCard(item,grid){
+  const {cls,icon}=getFileIcon(item);
+  const isGrid=currentView==='grid';
+  const perm = item.type==='folder'?getPermLevel(item):'';
+  const card=document.createElement('div');
+  card.className='file-card fade-in'+(item.type==='folder'&&perm?' folder-perm-'+perm:'');
+  card.dataset.id=item.id;
+  card.ondblclick=()=>openItem(item);
+  card.oncontextmenu=(e)=>{e.preventDefault();showContextMenu(e,item);};
+
+  if(isGrid){
+    card.innerHTML=`
+      <button class="file-card-menu-btn" onclick="event.stopPropagation();showContextMenu(event,${JSON.stringify(item).replace(/"/g,'&quot;')})">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+      <div class="file-icon ${cls}">${icon}</div>
+      <div class="file-name truncate" style="max-width:140px">${item.name}</div>
+      <div class="file-meta">${item.size||formatDate(item.created)}</div>
+      ${item.type==='folder'?`<div style="margin-top:.1rem"><span class="chip" style="background:${ROLE_BG[ROLE_KEYS[item.roles?.[0]]||'Stagiaire']||'#f1f5f9'};color:${ROLE_COLORS[item.roles?.[0]]||'#64748b'}">${item.roles?.length===ROLES.length?'Tous':''+item.roles?.length+' rôles'}</span></div>`:''}
+    `;
+  } else {
+    card.innerHTML=`
+      <div class="file-icon ${cls}">${icon}</div>
+      <div class="file-name flex-1 truncate" style="max-width:300px">${item.name}</div>
+      ${item.type==='folder'?`<span class="chip" style="background:${ROLE_BG[ROLE_KEYS[item.roles?.[0]]||'Stagiaire']||'#f1f5f9'};color:${ROLE_COLORS[item.roles?.[0]]||'#64748b'}">${item.roles?.length===ROLES.length?'Tous':''+item.roles?.length+' rôles'}</span>`:'<span></span>'}
+      <div class="file-meta" style="min-width:80px;text-align:right">${item.size||''}</div>
+      <div class="file-meta" style="min-width:110px;text-align:right">${formatDate(item.created)}</div>
+      <button class="file-card-menu-btn btn-icon btn-ghost" style="opacity:1;position:relative" onclick="event.stopPropagation();showContextMenu(event,${JSON.stringify(item).replace(/"/g,'&quot;')})">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+    `;
+  }
+  grid.appendChild(card);
+}
+
+function getPermLevel(folder){
+  if(!folder.roles||folder.roles.length===ROLES.length) return 'all';
+  if(folder.roles.length<=2) return 'private';
+  return 'restricted';
+}
+
+function renderBreadcrumb(){
+  const trail=document.getElementById('breadcrumb-trail');
+  const actions=document.getElementById('breadcrumb-actions');
+  trail.innerHTML='';
+  // Root
+  const root=document.createElement('div');
+  root.className='breadcrumb-item'+(currentPath.length===0?' active':'');
+  root.innerHTML=`<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Racine`;
+  root.onclick=()=>{currentPath=[];renderFiles();};
+  trail.appendChild(root);
+  currentPath.forEach((id,i)=>{
+    const sep=document.createElement('span');
+    sep.className='breadcrumb-sep';sep.textContent='›';
+    trail.appendChild(sep);
+    const f=FS.find(x=>x.id===id);
+    const item=document.createElement('div');
+    item.className='breadcrumb-item'+(i===currentPath.length-1?' active':'');
+    item.textContent=f?f.name:'?';
+    item.onclick=()=>{currentPath=currentPath.slice(0,i+1);renderFiles();};
+    trail.appendChild(item);
+  });
+  // Actions
+  actions.innerHTML='';
+  if(canWrite()){
+    const btnFolder=document.createElement('button');
+    btnFolder.className='btn btn-secondary btn-sm';
+    btnFolder.innerHTML=`<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Nouveau dossier`;
+    btnFolder.onclick=()=>openModal('create-folder');
+    actions.appendChild(btnFolder);
+    const btnUpload=document.createElement('button');
+    btnUpload.className='btn btn-primary btn-sm';
+    btnUpload.innerHTML=`<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> Importer`;
+    btnUpload.onclick=()=>openModal('upload');
+    actions.appendChild(btnUpload);
+  }
+}
+
+function renderRecent(){
+  const grid=document.getElementById('recent-grid');
+  grid.className='file-grid';
+  const recents=FS.filter(i=>i.type==='file').sort((a,b)=>(b.created||'').localeCompare(a.created||'')).slice(0,12);
+  grid.innerHTML='';
+  recents.forEach(item=>renderFileCard(item,grid));
+}
+
+function renderShared(){
+  const grid=document.getElementById('shared-grid');
+  grid.className='file-grid';
+  const shared=FS.filter(i=>i.type==='folder'&&i.roles&&i.roles.includes(currentUser.role)&&i.uploadedBy!==currentUser.id);
+  grid.innerHTML='';
+  if(!shared.length){grid.innerHTML='<div class="empty-state"><div class="empty-state-icon">🤝</div><h3>Rien à partager</h3><p>Aucun dossier partagé avec votre rôle.</p></div>';return;}
+  shared.forEach(item=>renderFileCard(item,grid));
+}
+
+function renderAdminStats(){
+  const el=document.getElementById('admin-stats');
+  const stats=[
+    {icon:'👥',label:'Utilisateurs',value:USERS.length,cls:'blue'},
+    {icon:'📁',label:'Dossiers',value:FS.filter(i=>i.type==='folder').length,cls:'orange'},
+    {icon:'📄',label:'Fichiers',value:FS.filter(i=>i.type==='file').length,cls:'green'},
+    {icon:'🔒',label:'Rôles actifs',value:ROLES.length,cls:'purple'},
+  ];
+  el.innerHTML=stats.map(s=>`<div class="stat-card"><div class="stat-icon ${s.cls}">${s.icon}</div><div><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div></div>`).join('');
+}
+
+function renderUsersTable(){
+  const tbody=document.getElementById('users-table-body');
+  tbody.innerHTML=USERS.map(u=>`
+    <tr>
+      <td><div class="flex items-center gap-3"><div class="table-avatar">${u.name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div><span style="font-weight:600">${u.name}</span><span style="color:var(--gray-400);font-size:.78rem;font-family:'JetBrains Mono',monospace">${u.id}</span></div></td>
+      <td><span class="chip" style="background:${ROLE_BG[ROLE_KEYS[u.role]]||'#f1f5f9'};color:${ROLE_COLORS[u.role]||'#64748b'}">${u.role}</span></td>
+      <td style="color:var(--gray-500);font-size:.82rem">${u.lastLogin}</td>
+      <td><span class="chip" style="background:${u.active?'#f0fdf4':'#fef2f2'};color:${u.active?'#16a34a':'#dc2626'}">${u.active?'Actif':'Inactif'}</span></td>
+      <td>
+        ${u.role!=='Informaticien'?`<button class="btn btn-ghost btn-sm" onclick="toggleUser('${u.id}')">${u.active?'Désactiver':'Activer'}</button>`:'<span style="font-size:.75rem;color:var(--gray-400)">Protégé</span>'}
+        ${u.role!=='Informaticien'&&u.id!==currentUser.id?`<button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="confirmDeleteUser('${u.id}')">Supprimer</button>`:''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderLogs(){
+  const tbody=document.getElementById('logs-table-body');
+  tbody.innerHTML=LOGS.slice().reverse().map(l=>`
+    <tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--gray-500)">${l.ts}</td>
+      <td><span style="font-weight:600">${l.user}</span></td>
+      <td><span class="chip" style="background:${l.action.includes('Connexion')?'#eff6ff':'l.action.includes(\'Suppression\')?\'#fef2f2\':\'#f0fdf4\''};color:${l.action.includes('Connexion')?'#2563eb':'#16a34a'}">${l.action}</span></td>
+      <td style="color:var(--gray-500)">${l.item}</td>
+    </tr>
+  `).join('');
+}
+
+// ===== ACTIONS =====
+function openItem(item){
+  if(item.type==='folder'){
+    currentPath.push(item.id);
+    renderFiles();
+    addLog('Ouverture dossier',item.name);
+  } else {
+    // Simulate download
+    downloadFile(item);
+  }
+}
+
+function downloadFile(item){
+  // Create a fake downloadable blob
+  const content = `Fichier MediCloud: ${item.name}\nTéléchargé par: ${currentUser.name}\nDate: ${new Date().toLocaleString('fr-FR')}`;
+  const blob = new Blob([content],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=item.name;a.click();
+  URL.revokeObjectURL(url);
+  toast(`Téléchargement de "${item.name}" lancé`,'success');
+  addLog('Téléchargement',item.name);
+}
+
+function setView(v){
+  currentView=v;
+  const grid=document.getElementById('file-grid');
+  grid.className='file-grid'+(v==='list'?' list-view':'');
+  document.getElementById('grid-btn').classList.toggle('active',v==='grid');
+  document.getElementById('list-btn').classList.toggle('active',v==='list');
+  renderFiles();
+}
+
+function doSearch(q){
+  if(!q.trim()){renderFiles();return;}
+  const results=FS.filter(i=>i.name.toLowerCase().includes(q.toLowerCase())&&(i.type==='file'||(i.type==='folder'&&canAccessFolder(i))));
+  const grid=document.getElementById('file-grid');
+  grid.className='file-grid'+(currentView==='list'?' list-view':'');
+  grid.innerHTML='';
+  document.getElementById('files-count').textContent=`${results.length} résultat(s)`;
+  if(!results.length){grid.innerHTML='<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>Aucun résultat</h3><p>Aucun fichier ne correspond à votre recherche.</p></div>';grid.style.display='block';return;}
+  grid.style.display='';
+  results.forEach(item=>renderFileCard(item,grid));
+}
+
+// ===== MODALS =====
+function openModal(id){
+  if(id==='create-folder') buildRolesChecks();
+  if(id==='upload'){
+    uploadFiles=[];
+    document.getElementById('upload-file-list').innerHTML='';
+    document.getElementById('upload-count').textContent='0';
+    const pId=currentPath.length>0?currentPath[currentPath.length-1]:null;
+    const folder=pId?FS.find(f=>f.id===pId):null;
+    document.getElementById('upload-subtitle').textContent=folder?`Dans "${folder.name}"` :'À la racine';
+  }
+  document.getElementById('modal-'+id).classList.add('open');
+}
+
+function closeModal(id){document.getElementById('modal-'+id).classList.remove('open');}
+
+function buildRolesChecks(){
+  const c=document.getElementById('folder-roles-checks');
+  c.innerHTML=ROLES.map(r=>`
+    <label class="role-checkbox">
+      <input type="checkbox" value="${r}" ${['Direction','Informaticien','Médecin'].includes(r)?'checked':''}>
+      <span class="role-checkbox-label">${r}</span>
+      <span class="role-badge" style="background:${ROLE_BG[ROLE_KEYS[r]]||'#f1f5f9'};color:${ROLE_COLORS[r]||'#64748b'}">${r}</span>
+    </label>
+  `).join('');
+}
+
+function doCreateFolder(){
+  const name=document.getElementById('folder-name').value.trim();
+  if(!name){toast('Veuillez saisir un nom.','error');return;}
+  const roles=[...document.querySelectorAll('#folder-roles-checks input:checked')].map(i=>i.value);
+  if(!roles.length){toast('Sélectionnez au moins un rôle.','error');return;}
+  const wp=document.getElementById('folder-write-perm').value;
+  const pId=currentPath.length>0?currentPath[currentPath.length-1]:null;
+  const newF={id:'f'+Date.now(),name,type:'folder',parentId:pId,roles,writePerm:wp,created:new Date().toISOString().slice(0,10),uploadedBy:currentUser.id};
+  FS.push(newF);
+  closeModal('create-folder');
+  document.getElementById('folder-name').value='';
+  renderFiles();
+  addLog('Création dossier',name);
+  toast(`Dossier "${name}" créé avec succès.`,'success');
+}
+
+function handleFileSelect(files){
+  uploadFiles=[...files];
+  updateUploadList();
+}
+
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  uploadFiles=[...e.dataTransfer.files];
+  updateUploadList();
+}
+
+function updateUploadList(){
+  const list=document.getElementById('upload-file-list');
+  document.getElementById('upload-count').textContent=uploadFiles.length;
+  list.innerHTML=uploadFiles.map(f=>`
+    <div class="upload-file-item">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span class="upload-file-name truncate">${f.name}</span>
+      <span class="upload-file-size">${formatSize(f.size)}</span>
+    </div>
+  `).join('');
+}
+
+function formatSize(bytes){
+  if(bytes<1024) return bytes+' o';
+  if(bytes<1024*1024) return (bytes/1024).toFixed(0)+' Ko';
+  return (bytes/(1024*1024)).toFixed(1)+' Mo';
+}
+
+function doUpload(){
+  if(!uploadFiles.length){toast('Aucun fichier sélectionné.','error');return;}
+  const pId=currentPath.length>0?currentPath[currentPath.length-1]:null;
+  uploadFiles.forEach(f=>{
+    const ext=getExtKey(f.name);
+    FS.push({id:'fi'+Date.now()+Math.random(),name:f.name,type:'file',parentId:pId,ext,size:formatSize(f.size),created:new Date().toISOString().slice(0,10),uploadedBy:currentUser.id});
+    addLog('Import fichier',f.name);
+  });
+  closeModal('upload');
+  renderFiles();
+  toast(`${uploadFiles.length} fichier(s) importé(s) avec succès.`,'success');
+  uploadFiles=[];
+}
+
+function getExtKey(name){
+  const e=name.split('.').pop().toLowerCase();
+  if(['pdf'].includes(e)) return 'pdf';
+  if(['doc','docx'].includes(e)) return 'doc';
+  if(['xls','xlsx','csv'].includes(e)) return 'xls';
+  if(['png','jpg','jpeg','gif','webp'].includes(e)) return 'img';
+  if(['ppt','pptx'].includes(e)) return 'ppt';
+  if(['zip','rar','7z'].includes(e)) return 'zip';
+  return 'txt';
+}
+
+// ===== CONTEXT MENU =====
+let ctxItem=null;
+function showContextMenu(e,item){
+  e.preventDefault&&e.preventDefault();
+  ctxItem=item;
+  const menu=document.getElementById('context-menu');
+  menu.style.left=Math.min(e.clientX,window.innerWidth-200)+'px';
+  menu.style.top=Math.min(e.clientY,window.innerHeight-180)+'px';
+  menu.classList.add('open');
+  // Show/hide options
+  const isAdmin=currentUser.role==='Direction'||currentUser.role==='Informaticien';
+  document.getElementById('ctx-rename').style.display=isAdmin?'':'none';
+  document.getElementById('ctx-delete').style.display=isAdmin?'':'none';
+  document.getElementById('ctx-download').style.display=item.type==='file'?'':'none';
+  document.getElementById('ctx-open').textContent=item.type==='folder'?'Ouvrir le dossier':'Prévisualiser';
+}
+
+function hideContextMenu(){document.getElementById('context-menu').classList.remove('open');}
+
+function ctxOpen(){hideContextMenu();if(ctxItem)openItem(ctxItem);}
+function ctxDownload(){hideContextMenu();if(ctxItem&&ctxItem.type==='file')downloadFile(ctxItem);}
+function ctxRename(){
+  hideContextMenu();
+  if(!ctxItem) return;
+  const n=prompt('Nouveau nom :',ctxItem.name);
+  if(n&&n.trim()){
+    const i=FS.find(x=>x.id===ctxItem.id);
+    if(i){addLog('Renommage',i.name+' → '+n.trim());i.name=n.trim();renderFiles();toast('Renommé avec succès.','success');}
+  }
+}
+function ctxDelete(){hideContextMenu();if(ctxItem)confirmDelete(ctxItem);}
+
+function confirmDelete(item){
+  pendingDeleteId=item.id;
+  document.getElementById('delete-item-name').textContent=item.name;
+  document.getElementById('delete-subtitle').textContent=item.type==='folder'?'Ce dossier et tout son contenu seront supprimés.':'Ce fichier sera supprimé définitivement.';
+  openModal('delete');
+}
+
+function doDelete(){
+  if(!pendingDeleteId){closeModal('delete');return;}
+  const item=FS.find(i=>i.id===pendingDeleteId);
+  if(item) addLog('Suppression',item.name);
+  // Remove item and children recursively
+  function removeRecursive(id){
+    FS=FS.filter(i=>i.id!==id);
+    FS.filter(i=>i.parentId===id).forEach(c=>removeRecursive(c.id));
+  }
+  removeRecursive(pendingDeleteId);
+  pendingDeleteId=null;
+  closeModal('delete');
+  renderFiles();
+  toast('Élément supprimé.','info');
+}
+
+// ===== USER MANAGEMENT =====
+function doAddUser(){
+  const name=document.getElementById('new-user-name').value.trim();
+  const uid=document.getElementById('new-user-id').value.trim();
+  const pass=document.getElementById('new-user-pass').value;
+  const role=document.getElementById('new-user-role').value;
+  if(!name||!uid||!pass){toast('Veuillez remplir tous les champs.','error');return;}
+  if(USERS.find(u=>u.id===uid)){toast('Cet identifiant existe déjà.','error');return;}
+  USERS.push({id:uid,name,pass,role,lastLogin:'Jamais',active:true});
+  closeModal('add-user');
+  renderUsersTable();
+  renderAdminStats();
+  addLog('Création utilisateur',name+' ('+role+')');
+  toast(`Compte "${name}" créé.`,'success');
+}
+
+function toggleUser(uid){
+  const u=USERS.find(x=>x.id===uid);
+  if(u){u.active=!u.active;renderUsersTable();toast(u.active?'Compte activé.':'Compte désactivé.','info');}
+}
+
+function confirmDeleteUser(uid){
+  const u=USERS.find(x=>x.id===uid);
+  if(!u) return;
+  pendingDeleteId='user:'+uid;
+  document.getElementById('delete-item-name').textContent=u.name;
+  document.getElementById('delete-subtitle').textContent='Ce compte utilisateur sera supprimé.';
+  openModal('delete');
+}
+
+// Override doDelete for users
+const _origDelete=doDelete;
+window.doDelete=function(){
+  if(pendingDeleteId&&pendingDeleteId.startsWith('user:')){
+    const uid=pendingDeleteId.slice(5);
+    const u=USERS.find(x=>x.id===uid);
+    if(u) addLog('Suppression utilisateur',u.name);
+    USERS=USERS.filter(x=>x.id!==uid);
+    pendingDeleteId=null;
+    closeModal('delete');
+    renderUsersTable();
+    renderAdminStats();
+    toast('Utilisateur supprimé.','info');
+    return;
+  }
+  _origDelete();
+};
+
+// ===== LOGS =====
+function addLog(action,item){
+  LOGS.push({ts:new Date().toLocaleString('fr-FR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).replace(',',''),user:currentUser?.name||'–',action,item});
+}
+
+// ===== TOAST =====
+function toast(msg,type='info'){
+  const c=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  const icons={success:'✓',error:'✗',info:'ℹ'};
+  t.innerHTML=`<span>${icons[type]||'•'}</span> ${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},3200);
+}
+
+// ===== USER MENU =====
+function toggleUserMenu(){document.getElementById('user-menu').classList.toggle('open');}
+function closeUserMenu(){document.getElementById('user-menu').classList.remove('open');}
+
+// ===== GLOBAL CLICKS =====
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#user-avatar-btn')) closeUserMenu();
+  if(!e.target.closest('#context-menu')&&!e.target.closest('.file-card-menu-btn')&&!e.target.closest('.file-card[oncontextmenu]')) hideContextMenu();
+});
+
+// Enter to login
+document.addEventListener('DOMContentLoaded',()=>{
+  ['login-user','login-pass'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  });
+});
+</script>
+</body>
+</html>
