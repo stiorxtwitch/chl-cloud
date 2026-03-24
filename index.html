@@ -592,15 +592,23 @@ const ROLES = ['Stagiaire','Infirmier','Apprenti Médecin','Médecin','Apprenti 
 const ROLE_COLORS = {'Stagiaire':'#16a34a','Infirmier':'#2563eb','Apprenti Médecin':'#d97706','Médecin':'#e11d48','Apprenti Chirurgien':'#9333ea','Chirurgien':'#ea580c','Direction':'#1d4ed8','Informaticien':'#7c3aed'};
 const ROLE_BG = {'Stagiaire':'#f0fdf4','Infirmier':'#eff6ff','Apprenti Médecin':'#fef3c7','Médecin':'#fff1f2','Apprenti Chirurgien':'#fdf4ff','Chirurgien':'#fff7ed','Direction':'#dbeafe','Informaticien':'#ede9fe'};
 
+// ===== TABLE NAMES =====
+// Ces constantes centralisent les noms des tables Supabase.
+// Ils correspondent aux tables préfixées créées dans le SQL.
+const T_USERS   = 'medicloud_users';
+const T_FOLDERS = 'medicloud_folders';
+const T_FILES   = 'medicloud_files';
+const T_LOGS    = 'medicloud_logs';
+
 // ===== STATE =====
-let currentUser = null;       // full user row from DB
-let currentPath = [];         // array of folder UUIDs
+let currentUser = null;
+let currentPath = [];
 let currentView = 'grid';
 let ctxItem = null;
-let pendingDelete = null;     // {type:'file'|'folder'|'user', id}
+let pendingDelete = null;
 let uploadFiles = [];
-let allFolders = [];          // cache
-let allFiles = [];            // cache
+let allFolders = [];
+let allFiles = [];
 
 // ===== HELPERS =====
 function loading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
@@ -666,7 +674,7 @@ async function doLogin() {
   btn.disabled = true; btn.textContent = 'Connexion…';
   loading(true);
   try {
-    const { data, error } = await sb.from('users')
+    const { data, error } = await sb.from(T_USERS)
       .select('*')
       .eq('username', username)
       .eq('password', password)
@@ -676,8 +684,7 @@ async function doLogin() {
       document.getElementById('login-error').style.display = 'block';
       return;
     }
-    // Update last_login
-    await sb.from('users').update({ last_login: new Date().toISOString() }).eq('id', data.id);
+    await sb.from(T_USERS).update({ last_login: new Date().toISOString() }).eq('id', data.id);
     currentUser = data;
     await addLog('Connexion', '–');
     loginUI();
@@ -720,8 +727,8 @@ async function doLogout() {
 // ===== CACHE =====
 async function loadCache() {
   const [fRes, fiRes] = await Promise.all([
-    sb.from('folders').select('*').order('name'),
-    sb.from('files').select('*').order('name')
+    sb.from(T_FOLDERS).select('*').order('name'),
+    sb.from(T_FILES).select('*').order('name')
   ]);
   allFolders = fRes.data || [];
   allFiles = fiRes.data || [];
@@ -801,13 +808,6 @@ function renderFileCard(item, grid) {
   grid.appendChild(card);
 }
 
-// Store items by id for context menu
-const _itemCache = {};
-function renderFileCardAndCache(item, grid) {
-  _itemCache[item.id] = item;
-  renderFileCard(item, grid);
-}
-
 function showContextMenuById(id, type, e) {
   const item = type === 'folder'
     ? allFolders.find(f=>f.id===id)
@@ -865,9 +865,9 @@ async function renderShared() {
 
 async function renderAdminStats() {
   const [uRes, fRes, fiRes] = await Promise.all([
-    sb.from('users').select('id', {count:'exact', head:true}),
-    sb.from('folders').select('id', {count:'exact', head:true}),
-    sb.from('files').select('id', {count:'exact', head:true}),
+    sb.from(T_USERS).select('id', {count:'exact', head:true}),
+    sb.from(T_FOLDERS).select('id', {count:'exact', head:true}),
+    sb.from(T_FILES).select('id', {count:'exact', head:true}),
   ]);
   const el = document.getElementById('admin-stats');
   const stats = [
@@ -880,7 +880,7 @@ async function renderAdminStats() {
 }
 
 async function renderUsersTable() {
-  const { data } = await sb.from('users').select('*').order('full_name');
+  const { data } = await sb.from(T_USERS).select('*').order('full_name');
   const tbody = document.getElementById('users-table-body');
   tbody.innerHTML = (data||[]).map(u => `
     <tr>
@@ -897,7 +897,7 @@ async function renderUsersTable() {
 }
 
 async function renderLogs() {
-  const { data } = await sb.from('logs').select('*').order('created_at', {ascending:false}).limit(100);
+  const { data } = await sb.from(T_LOGS).select('*').order('created_at', {ascending:false}).limit(100);
   const tbody = document.getElementById('logs-table-body');
   tbody.innerHTML = (data||[]).map(l => `
     <tr>
@@ -911,7 +911,7 @@ async function renderLogs() {
 
 async function addLog(action, item) {
   if (!currentUser) return;
-  await sb.from('logs').insert({ user_id: currentUser.id, user_name: currentUser.full_name, action, item });
+  await sb.from(T_LOGS).insert({ user_id: currentUser.id, user_name: currentUser.full_name, action, item });
 }
 
 // ===== ACTIONS =====
@@ -993,7 +993,7 @@ async function doCreateFolder() {
   const wp = document.getElementById('folder-write-perm').value;
   const pId = currentPath.length > 0 ? currentPath[currentPath.length-1] : null;
   loading(true);
-  const { error } = await sb.from('folders').insert({ name, parent_id: pId, roles, write_perm: wp, uploaded_by: currentUser.id });
+  const { error } = await sb.from(T_FOLDERS).insert({ name, parent_id: pId, roles, write_perm: wp, uploaded_by: currentUser.id });
   loading(false);
   if (error) { toast('Erreur : ' + error.message, 'error'); return; }
   closeModal('create-folder');
@@ -1024,7 +1024,7 @@ async function doUpload() {
     name: f.name, parent_id: pId, ext: getExtKey(f.name),
     size: formatSize(f.size), uploaded_by: currentUser.id
   }));
-  const { error } = await sb.from('files').insert(inserts);
+  const { error } = await sb.from(T_FILES).insert(inserts);
   loading(false);
   if (error) { toast('Erreur : ' + error.message,'error'); return; }
   for (const f of uploadFiles) await addLog('Import fichier', f.name);
@@ -1056,7 +1056,8 @@ async function ctxRename() {
   const n = prompt('Nouveau nom :', ctxItem.name);
   if (!n || !n.trim()) return;
   loading(true);
-  const table = ctxItem.type === 'folder' ? 'folders' : 'files';
+  // ✅ Utilise les constantes de tables préfixées
+  const table = ctxItem.type === 'folder' ? T_FOLDERS : T_FILES;
   const { error } = await sb.from(table).update({ name: n.trim() }).eq('id', ctxItem.id);
   loading(false);
   if (error) { toast('Erreur : ' + error.message,'error'); return; }
@@ -1077,7 +1078,7 @@ async function doDelete() {
   if (!pendingDelete) { closeModal('delete'); return; }
   loading(true);
   if (pendingDelete.type === 'user') {
-    const { error } = await sb.from('users').delete().eq('id', pendingDelete.id);
+    const { error } = await sb.from(T_USERS).delete().eq('id', pendingDelete.id);
     loading(false);
     if (error) { toast('Erreur : ' + error.message,'error'); return; }
     await addLog('Suppression utilisateur', pendingDelete.name);
@@ -1086,7 +1087,8 @@ async function doDelete() {
     await renderAdminStats();
     toast('Utilisateur supprimé.','info');
   } else {
-    const table = pendingDelete.type === 'folder' ? 'folders' : 'files';
+    // ✅ Utilise les constantes de tables préfixées
+    const table = pendingDelete.type === 'folder' ? T_FOLDERS : T_FILES;
     const { error } = await sb.from(table).delete().eq('id', pendingDelete.id);
     loading(false);
     if (error) { toast('Erreur : ' + error.message,'error'); return; }
@@ -1106,7 +1108,7 @@ async function doAddUser() {
   const role = document.getElementById('new-user-role').value;
   if (!full_name || !username || !password) { toast('Veuillez remplir tous les champs.','error'); return; }
   loading(true);
-  const { error } = await sb.from('users').insert({ full_name, username, password, role });
+  const { error } = await sb.from(T_USERS).insert({ full_name, username, password, role });
   loading(false);
   if (error) { toast('Erreur : ' + (error.message.includes('unique')?'Cet identifiant existe déjà.':error.message),'error'); return; }
   closeModal('add-user');
@@ -1119,7 +1121,7 @@ async function doAddUser() {
 
 async function toggleUser(uid, currentActive) {
   const newActive = currentActive === 'true' ? false : true;
-  const { error } = await sb.from('users').update({ active: newActive }).eq('id', uid);
+  const { error } = await sb.from(T_USERS).update({ active: newActive }).eq('id', uid);
   if (error) { toast('Erreur.','error'); return; }
   await renderUsersTable();
   toast(newActive ? 'Compte activé.' : 'Compte désactivé.','info');
