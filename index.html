@@ -264,6 +264,11 @@
   .folder-perm-all{border-top:3px solid #22c55e}
   .folder-perm-restricted{border-top:3px solid #f59e0b}
   .folder-perm-private{border-top:3px solid #ef4444}
+  /* PROGRESS BAR */
+  .upload-progress-wrap{margin-top:.75rem;display:none}
+  .upload-progress-bar{height:6px;background:var(--blue-100);border-radius:99px;overflow:hidden}
+  .upload-progress-fill{height:100%;background:linear-gradient(90deg,var(--blue-400),var(--accent));border-radius:99px;width:0%;transition:width .3s ease}
+  .upload-progress-label{font-size:.75rem;color:var(--gray-500);margin-top:.35rem;text-align:center}
   @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .fade-in{animation:fadeIn .3s ease forwards}
   @media(max-width:768px){.login-left{display:none}.login-right{width:100%;min-height:100vh}.sidebar{width:56px;overflow:hidden}.sidebar-item span,.sidebar-section-title,.sidebar-storage{display:none}.sidebar-item{justify-content:center;padding:.7rem}.file-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
@@ -499,11 +504,15 @@
         <small>PDF, DOC, XLS, PNG, JPG, ZIP… (max 50 Mo)</small>
         <input type="file" id="file-input" multiple style="display:none" onchange="handleFileSelect(this.files)">
       </div>
+      <div class="upload-progress-wrap" id="upload-progress-wrap">
+        <div class="upload-progress-bar"><div class="upload-progress-fill" id="upload-progress-fill"></div></div>
+        <div class="upload-progress-label" id="upload-progress-label">0 / 0 fichier(s)</div>
+      </div>
       <div class="upload-file-list" id="upload-file-list"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('upload')">Annuler</button>
-      <button class="btn btn-primary" onclick="doUpload()">
+      <button class="btn btn-primary" id="upload-btn" onclick="doUpload()">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
         Importer (<span id="upload-count">0</span>)
       </button>
@@ -592,13 +601,12 @@ const ROLES = ['Stagiaire','Infirmier','Apprenti Médecin','Médecin','Apprenti 
 const ROLE_COLORS = {'Stagiaire':'#16a34a','Infirmier':'#2563eb','Apprenti Médecin':'#d97706','Médecin':'#e11d48','Apprenti Chirurgien':'#9333ea','Chirurgien':'#ea580c','Direction':'#1d4ed8','Informaticien':'#7c3aed'};
 const ROLE_BG = {'Stagiaire':'#f0fdf4','Infirmier':'#eff6ff','Apprenti Médecin':'#fef3c7','Médecin':'#fff1f2','Apprenti Chirurgien':'#fdf4ff','Chirurgien':'#fff7ed','Direction':'#dbeafe','Informaticien':'#ede9fe'};
 
-// ===== TABLE NAMES =====
-// Ces constantes centralisent les noms des tables Supabase.
-// Ils correspondent aux tables préfixées créées dans le SQL.
+// ===== TABLE / BUCKET NAMES =====
 const T_USERS   = 'medicloud_users';
 const T_FOLDERS = 'medicloud_folders';
 const T_FILES   = 'medicloud_files';
 const T_LOGS    = 'medicloud_logs';
+const BUCKET    = 'medicloud-files'; // ← nom de votre bucket Supabase Storage
 
 // ===== STATE =====
 let currentUser = null;
@@ -631,6 +639,8 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
 }
 function formatSize(bytes) {
+  if (!bytes && bytes !== 0) return '–';
+  if (typeof bytes === 'string') return bytes;
   if (bytes < 1024) return bytes + ' o';
   if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' Ko';
   return (bytes/(1024*1024)).toFixed(1) + ' Mo';
@@ -644,6 +654,28 @@ function getExtKey(name) {
   if (['ppt','pptx'].includes(e)) return 'ppt';
   if (['zip','rar','7z'].includes(e)) return 'zip';
   return 'txt';
+}
+function getMimeType(filename) {
+  const e = filename.split('.').pop().toLowerCase();
+  const map = {
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    csv: 'text/csv',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    zip: 'application/zip',
+    rar: 'application/x-rar-compressed',
+    txt: 'text/plain',
+  };
+  return map[e] || 'application/octet-stream';
 }
 function isAdmin() { return currentUser && (currentUser.role === 'Direction' || currentUser.role === 'Informaticien'); }
 function canWrite() {
@@ -697,7 +729,8 @@ async function doLogin() {
     toast('Erreur de connexion.', 'error');
   } finally {
     loading(false);
-    btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Se connecter`;
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Se connecter`;
   }
 }
 
@@ -921,18 +954,47 @@ async function openItem(item) {
     await addLog('Ouverture dossier', item.name);
     await renderFiles();
   } else {
-    downloadFile(item);
+    await downloadFile(item);
   }
 }
 
-function downloadFile(item) {
-  const content = `Fichier MediCloud: ${item.name}\nTéléchargé par: ${currentUser.full_name}\nDate: ${new Date().toLocaleString('fr-FR')}`;
-  const blob = new Blob([content], {type:'text/plain'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download=item.name; a.click();
-  URL.revokeObjectURL(url);
-  toast(`Téléchargement de "${item.name}" lancé`, 'success');
-  addLog('Téléchargement', item.name);
+// ✅ TÉLÉCHARGEMENT RÉEL depuis Supabase Storage
+async function downloadFile(item) {
+  if (!item.storage_path) {
+    toast('Ce fichier n\'a pas de chemin de stockage associé.', 'error');
+    return;
+  }
+  loading(true);
+  try {
+    // Télécharge le blob directement depuis Supabase Storage (signed download)
+    const { data, error } = await sb.storage
+      .from(BUCKET)
+      .download(item.storage_path);
+
+    if (error || !data) {
+      toast('Impossible de télécharger le fichier : ' + (error?.message || 'inconnu'), 'error');
+      return;
+    }
+
+    // Recrée un blob avec le bon type MIME pour éviter le "unsafe" du navigateur
+    const mime = getMimeType(item.name);
+    const typedBlob = new Blob([data], { type: mime });
+    const url = URL.createObjectURL(typedBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = item.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast(`Téléchargement de "${item.name}" lancé`, 'success');
+    addLog('Téléchargement', item.name);
+  } catch(e) {
+    toast('Erreur lors du téléchargement : ' + e.message, 'error');
+  } finally {
+    loading(false);
+  }
 }
 
 function setView(v) {
@@ -966,6 +1028,9 @@ function openModal(id) {
     uploadFiles = [];
     document.getElementById('upload-file-list').innerHTML = '';
     document.getElementById('upload-count').textContent = '0';
+    document.getElementById('upload-progress-wrap').style.display = 'none';
+    document.getElementById('upload-progress-fill').style.width = '0%';
+    document.getElementById('file-input').value = '';
     const pId = currentPath.length > 0 ? currentPath[currentPath.length-1] : null;
     const folder = pId ? allFolders.find(f=>f.id===pId) : null;
     document.getElementById('upload-subtitle').textContent = folder ? `Dans "${folder.name}"` : 'À la racine';
@@ -1016,22 +1081,80 @@ function updateUploadList() {
   `).join('');
 }
 
+// ✅ UPLOAD RÉEL vers Supabase Storage + enregistrement en base
 async function doUpload() {
-  if (!uploadFiles.length) { toast('Aucun fichier sélectionné.','error'); return; }
+  if (!uploadFiles.length) { toast('Aucun fichier sélectionné.', 'error'); return; }
+
   const pId = currentPath.length > 0 ? currentPath[currentPath.length-1] : null;
-  loading(true);
-  const inserts = uploadFiles.map(f => ({
-    name: f.name, parent_id: pId, ext: getExtKey(f.name),
-    size: formatSize(f.size), uploaded_by: currentUser.id
-  }));
-  const { error } = await sb.from(T_FILES).insert(inserts);
-  loading(false);
-  if (error) { toast('Erreur : ' + error.message,'error'); return; }
-  for (const f of uploadFiles) await addLog('Import fichier', f.name);
+  const btn = document.getElementById('upload-btn');
+  btn.disabled = true;
+
+  // Affiche la barre de progression
+  const progressWrap = document.getElementById('upload-progress-wrap');
+  const progressFill = document.getElementById('upload-progress-fill');
+  const progressLabel = document.getElementById('upload-progress-label');
+  progressWrap.style.display = 'block';
+
+  const inserts = [];
+  const errors = [];
+
+  for (let i = 0; i < uploadFiles.length; i++) {
+    const f = uploadFiles[i];
+    // Mise à jour progression
+    const pct = Math.round((i / uploadFiles.length) * 100);
+    progressFill.style.width = pct + '%';
+    progressLabel.textContent = `${i} / ${uploadFiles.length} fichier(s) — ${f.name}`;
+
+    // Chemin unique dans le bucket : userId/timestamp_nom
+    const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `${currentUser.id}/${Date.now()}_${safeName}`;
+
+    const { error: uploadError } = await sb.storage
+      .from(BUCKET)
+      .upload(storagePath, f, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: getMimeType(f.name) // ← type MIME explicite, clé pour les PDFs
+      });
+
+    if (uploadError) {
+      errors.push(f.name + ' : ' + uploadError.message);
+      continue;
+    }
+
+    inserts.push({
+      name: f.name,
+      parent_id: pId,
+      ext: getExtKey(f.name),
+      size: formatSize(f.size),
+      storage_path: storagePath,
+      uploaded_by: currentUser.id
+    });
+  }
+
+  // Progression à 100%
+  progressFill.style.width = '100%';
+  progressLabel.textContent = `${inserts.length} / ${uploadFiles.length} fichier(s) uploadé(s)`;
+
+  if (errors.length) {
+    errors.forEach(e => toast('Erreur upload : ' + e, 'error'));
+  }
+
+  if (inserts.length) {
+    const { error: dbError } = await sb.from(T_FILES).insert(inserts);
+    if (dbError) {
+      toast('Erreur base de données : ' + dbError.message, 'error');
+      btn.disabled = false;
+      return;
+    }
+    for (const ins of inserts) await addLog('Import fichier', ins.name);
+    await renderFiles();
+    toast(`${inserts.length} fichier(s) importé(s) avec succès.`, 'success');
+  }
+
   closeModal('upload');
-  await renderFiles();
-  toast(`${uploadFiles.length} fichier(s) importé(s).`, 'success');
   uploadFiles = [];
+  btn.disabled = false;
 }
 
 // ===== CONTEXT MENU =====
@@ -1050,13 +1173,13 @@ function showContextMenu(e, item) {
 function hideContextMenu() { document.getElementById('context-menu').classList.remove('open'); }
 function ctxOpen() { hideContextMenu(); if (ctxItem) openItem(ctxItem); }
 function ctxDownload() { hideContextMenu(); if (ctxItem && ctxItem.type==='file') downloadFile(ctxItem); }
+
 async function ctxRename() {
   hideContextMenu();
   if (!ctxItem) return;
   const n = prompt('Nouveau nom :', ctxItem.name);
   if (!n || !n.trim()) return;
   loading(true);
-  // ✅ Utilise les constantes de tables préfixées
   const table = ctxItem.type === 'folder' ? T_FOLDERS : T_FILES;
   const { error } = await sb.from(table).update({ name: n.trim() }).eq('id', ctxItem.id);
   loading(false);
@@ -1068,7 +1191,7 @@ async function ctxRename() {
 function ctxDelete() { hideContextMenu(); if (ctxItem) confirmDelete(ctxItem); }
 
 function confirmDelete(item) {
-  pendingDelete = { type: item.type, id: item.id, name: item.name };
+  pendingDelete = { type: item.type, id: item.id, name: item.name, storage_path: item.storage_path };
   document.getElementById('delete-item-name').textContent = item.name;
   document.getElementById('delete-subtitle').textContent = item.type==='folder' ? 'Ce dossier et tout son contenu seront supprimés.' : 'Ce fichier sera supprimé définitivement.';
   openModal('delete');
@@ -1087,7 +1210,10 @@ async function doDelete() {
     await renderAdminStats();
     toast('Utilisateur supprimé.','info');
   } else {
-    // ✅ Utilise les constantes de tables préfixées
+    // Supprime aussi le fichier dans Storage si présent
+    if (pendingDelete.type === 'file' && pendingDelete.storage_path) {
+      await sb.storage.from(BUCKET).remove([pendingDelete.storage_path]);
+    }
     const table = pendingDelete.type === 'folder' ? T_FOLDERS : T_FILES;
     const { error } = await sb.from(table).delete().eq('id', pendingDelete.id);
     loading(false);
