@@ -606,7 +606,7 @@ const T_USERS   = 'medicloud_users';
 const T_FOLDERS = 'medicloud_folders';
 const T_FILES   = 'medicloud_files';
 const T_LOGS    = 'medicloud_logs';
-const BUCKET    = 'medicloud-files'; // ← nom de votre bucket Supabase Storage
+const BUCKET    = 'medicloud-files';
 
 // ===== STATE =====
 let currentUser = null;
@@ -620,6 +620,7 @@ let allFiles = [];
 
 // ===== HELPERS =====
 function loading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
+
 function toast(msg, type='info') {
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
@@ -629,15 +630,18 @@ function toast(msg, type='info') {
   c.appendChild(t);
   setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3200);
 }
+
 function getFileIcon(item) {
   if (item.type === 'folder') return {cls:'folder', icon:'📁'};
   const m = {pdf:{cls:'pdf',icon:'📄'},doc:{cls:'doc',icon:'📝'},xls:{cls:'xls',icon:'📊'},img:{cls:'img',icon:'🖼️'},ppt:{cls:'ppt',icon:'📋'},zip:{cls:'zip',icon:'🗜️'},txt:{cls:'txt',icon:'📃'}};
   return m[item.ext] || {cls:'txt', icon:'📎'};
 }
+
 function formatDate(d) {
   if (!d) return '–';
   return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
 }
+
 function formatSize(bytes) {
   if (!bytes && bytes !== 0) return '–';
   if (typeof bytes === 'string') return bytes;
@@ -645,6 +649,7 @@ function formatSize(bytes) {
   if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' Ko';
   return (bytes/(1024*1024)).toFixed(1) + ' Mo';
 }
+
 function getExtKey(name) {
   const e = name.split('.').pop().toLowerCase();
   if (['pdf'].includes(e)) return 'pdf';
@@ -655,6 +660,7 @@ function getExtKey(name) {
   if (['zip','rar','7z'].includes(e)) return 'zip';
   return 'txt';
 }
+
 function getMimeType(filename) {
   const e = filename.split('.').pop().toLowerCase();
   const map = {
@@ -677,7 +683,9 @@ function getMimeType(filename) {
   };
   return map[e] || 'application/octet-stream';
 }
+
 function isAdmin() { return currentUser && (currentUser.role === 'Direction' || currentUser.role === 'Informaticien'); }
+
 function canWrite() {
   const pId = currentPath.length > 0 ? currentPath[currentPath.length-1] : null;
   if (!pId) return isAdmin();
@@ -687,10 +695,12 @@ function canWrite() {
   if (folder.write_perm === 'medecin') return ['Médecin','Chirurgien','Apprenti Médecin','Apprenti Chirurgien','Direction','Informaticien'].includes(currentUser.role);
   return folder.roles && folder.roles.includes(currentUser.role);
 }
+
 function canAccessFolder(folder) {
   if (!folder.roles || folder.roles.length === 0) return true;
   return folder.roles.includes(currentUser.role);
 }
+
 function getPermLevel(folder) {
   if (!folder.roles || folder.roles.length === ROLES.length) return 'all';
   if (folder.roles.length <= 2) return 'private';
@@ -958,7 +968,7 @@ async function openItem(item) {
   }
 }
 
-// ✅ TÉLÉCHARGEMENT RÉEL depuis Supabase Storage
+// ✅ TÉLÉCHARGEMENT CORRIGÉ — pas de file:// URL, délai suffisant avant revokeObjectURL
 async function downloadFile(item) {
   if (!item.storage_path) {
     toast('Ce fichier n\'a pas de chemin de stockage associé.', 'error');
@@ -966,32 +976,38 @@ async function downloadFile(item) {
   }
   loading(true);
   try {
-    // Télécharge le blob directement depuis Supabase Storage (signed download)
     const { data, error } = await sb.storage
       .from(BUCKET)
       .download(item.storage_path);
 
     if (error || !data) {
-      toast('Impossible de télécharger le fichier : ' + (error?.message || 'inconnu'), 'error');
+      toast('Impossible de télécharger : ' + (error?.message || 'inconnu'), 'error');
       return;
     }
 
-    // Recrée un blob avec le bon type MIME pour éviter le "unsafe" du navigateur
+    // Reconstruction du blob avec le bon type MIME
     const mime = getMimeType(item.name);
     const typedBlob = new Blob([data], { type: mime });
     const url = URL.createObjectURL(typedBlob);
+
+    // Création du lien de téléchargement (forcer download, jamais d'ouverture)
     const a = document.createElement('a');
     a.href = url;
     a.download = item.name;
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+    // Délai suffisant avant de libérer l'URL (évite l'annulation prématurée)
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 2000);
 
     toast(`Téléchargement de "${item.name}" lancé`, 'success');
     addLog('Téléchargement', item.name);
   } catch(e) {
-    toast('Erreur lors du téléchargement : ' + e.message, 'error');
+    toast('Erreur : ' + e.message, 'error');
   } finally {
     loading(false);
   }
@@ -1037,6 +1053,7 @@ function openModal(id) {
   }
   document.getElementById('modal-' + id).classList.add('open');
 }
+
 function closeModal(id) { document.getElementById('modal-' + id).classList.remove('open'); }
 
 function buildRolesChecks() {
@@ -1070,6 +1087,7 @@ async function doCreateFolder() {
 
 function handleFileSelect(files) { uploadFiles = [...files]; updateUploadList(); }
 function handleDrop(e) { e.preventDefault(); document.getElementById('upload-zone').classList.remove('drag-over'); uploadFiles = [...e.dataTransfer.files]; updateUploadList(); }
+
 function updateUploadList() {
   document.getElementById('upload-count').textContent = uploadFiles.length;
   document.getElementById('upload-file-list').innerHTML = uploadFiles.map(f=>`
@@ -1081,7 +1099,7 @@ function updateUploadList() {
   `).join('');
 }
 
-// ✅ UPLOAD RÉEL vers Supabase Storage + enregistrement en base
+// ✅ UPLOAD CORRIGÉ — utilise f.type en priorité pour le contentType
 async function doUpload() {
   if (!uploadFiles.length) { toast('Aucun fichier sélectionné.', 'error'); return; }
 
@@ -1089,7 +1107,6 @@ async function doUpload() {
   const btn = document.getElementById('upload-btn');
   btn.disabled = true;
 
-  // Affiche la barre de progression
   const progressWrap = document.getElementById('upload-progress-wrap');
   const progressFill = document.getElementById('upload-progress-fill');
   const progressLabel = document.getElementById('upload-progress-label');
@@ -1100,21 +1117,23 @@ async function doUpload() {
 
   for (let i = 0; i < uploadFiles.length; i++) {
     const f = uploadFiles[i];
-    // Mise à jour progression
     const pct = Math.round((i / uploadFiles.length) * 100);
     progressFill.style.width = pct + '%';
     progressLabel.textContent = `${i} / ${uploadFiles.length} fichier(s) — ${f.name}`;
 
-    // Chemin unique dans le bucket : userId/timestamp_nom
+    // Chemin unique dans le bucket
     const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `${currentUser.id}/${Date.now()}_${safeName}`;
+
+    // Utilise f.type (MIME natif du navigateur) en priorité, fallback sur getMimeType
+    const contentType = f.type && f.type !== '' ? f.type : getMimeType(f.name);
 
     const { error: uploadError } = await sb.storage
       .from(BUCKET)
       .upload(storagePath, f, {
         cacheControl: '3600',
         upsert: false,
-        contentType: getMimeType(f.name) // ← type MIME explicite, clé pour les PDFs
+        contentType: contentType
       });
 
     if (uploadError) {
@@ -1132,7 +1151,6 @@ async function doUpload() {
     });
   }
 
-  // Progression à 100%
   progressFill.style.width = '100%';
   progressLabel.textContent = `${inserts.length} / ${uploadFiles.length} fichier(s) uploadé(s)`;
 
@@ -1168,8 +1186,9 @@ function showContextMenu(e, item) {
   document.getElementById('ctx-rename').style.display = isAdmin() ? '' : 'none';
   document.getElementById('ctx-delete').style.display = isAdmin() ? '' : 'none';
   document.getElementById('ctx-download').style.display = item.type==='file' ? '' : 'none';
-  document.getElementById('ctx-open').textContent = item.type==='folder' ? 'Ouvrir le dossier' : 'Prévisualiser';
+  document.getElementById('ctx-open').textContent = item.type==='folder' ? 'Ouvrir le dossier' : 'Télécharger';
 }
+
 function hideContextMenu() { document.getElementById('context-menu').classList.remove('open'); }
 function ctxOpen() { hideContextMenu(); if (ctxItem) openItem(ctxItem); }
 function ctxDownload() { hideContextMenu(); if (ctxItem && ctxItem.type==='file') downloadFile(ctxItem); }
@@ -1188,6 +1207,7 @@ async function ctxRename() {
   await renderFiles();
   toast('Renommé avec succès.','success');
 }
+
 function ctxDelete() { hideContextMenu(); if (ctxItem) confirmDelete(ctxItem); }
 
 function confirmDelete(item) {
@@ -1210,7 +1230,6 @@ async function doDelete() {
     await renderAdminStats();
     toast('Utilisateur supprimé.','info');
   } else {
-    // Supprime aussi le fichier dans Storage si présent
     if (pendingDelete.type === 'file' && pendingDelete.storage_path) {
       await sb.storage.from(BUCKET).remove([pendingDelete.storage_path]);
     }
